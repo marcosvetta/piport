@@ -117,26 +117,9 @@ ORG 32
 	
 	Error_card equ 63
 	Habilita_pago_TKF equ 62
-	
+
 	Contador_retardo_luzl equ 112
 	Contador_retardo_luzh equ 113
-
-	Habilita_pago_AUTO equ 114	 ;Autorecharger
-	Habilita_pago_TKA equ 115  ;ticket eater	
-	
-	LED1 equ 116	
-	LED2 equ 117
-	LED3 equ 118
-	LED4 equ 119
-	LED5 equ 120
-	LED6 equ 121
-	LED7 equ 122	
-	LED8 equ 123
-	LED9 equ 124
-	LED10 equ 125
-	LED11 equ 126
-	LED12 equ 127
-	
 			
 ;------------------ARRAY
   ORG 080H
@@ -270,9 +253,6 @@ LOOP:
 				jnz PAYING_TKE
 				mov a,Habilita_pago_TKF
 				jnz PAYING_TKF
-				mov a,Habilita_pago_AUTO
-				jnz PAYING_TKF
-
 LOOP_1:
  mov a,Flag_lectura_tarjeta
  jnz LOOP
@@ -355,43 +335,11 @@ Pay_CTRL:
    ;pasado el timer vuelve aenviar el tk
 	  	call F_TKE
 
-
-	call CARGA_LUZ_PAGO_MEM
+	call carga_AMARILLO
    call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM	
-   call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM
-   call Buffer_fill_LED
-
-	call CARGA_LUZ_PAGO_MEM2
-   call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM2	
-   call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM2
-   call Buffer_fill_LED
-
-
-;	call Girar_color
+	call Girar_color
 	  	
 jmp LOOP
-
-;PAYING_AUTO:
-;   call MUTE_DES
-;	
-;mov a,Acumulador_pago ;Pagando/contando tikerts fisicos
-;jz LOOP_1
-;	mov sbuf,#041H  ;Pago de tickets fisico 'A'
-;Pay_CTRLAUTO:
-;	 	mov a,Transmision_OK
-; 		jz Pay_CTRLAUTO
-;  		mov Transmision_OK,#00H
-;dec Acumulador_pago  		
-;
-;	call carga_AMARILLO
-;   call Buffer_fill_LED
-;	call Girar_color
-;
-;jmp LOOP
 
 
 CHK_ENTRADA:
@@ -444,14 +392,6 @@ CHK_ENTRADA:
 	mov a,VALOR_CHAIN_CHK
 	xrl a,#032H  ; 2
 	jz ES_GIRO_IZQ 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#033H  ; 2
-	jz ES_LED_PAGO 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#034H  ; 2
-	jz ES_LED_PAGO2 
 	
 	call INI_TIEMPO	
 	jmp LOOP
@@ -495,13 +435,6 @@ ES_TIEMPO_GIRO:
 ES_GIRO_IZQ:
 		call GIRAR2
 		jmp ES_SALIDA1
-ES_LED_PAGO:
-		call LED_PAGO
-		jmp ES_SALIDA1
-ES_LED_PAGO2:
-		call LED_PAGO2
-		jmp ES_SALIDA1
-
 
 ES_SALIDA:
 		call INI_TIEMPO
@@ -2001,9 +1934,6 @@ mov Acumulador_pago,#00h
 mov Habilita_pago_TKF,#00H
 mov Pagando,#00H
 ;-------------------
-;=================AUTO
-mov Habilita_pago_AUTO,#00H
-
 
 pop PSW
 pop acc
@@ -2061,12 +1991,12 @@ jz PAGO_CORTO
 
 PAGO_NORMAL:
 	mov Contador_retardo_pago_l,#0FEH ;low: 0FEH Hig:025H t= 38ms
-	mov Contador_retardo_pago_h,#070H ;low: 0FEH Hig:025H t= 38ms
+	mov Contador_retardo_pago_h,#025H ;low: 0FEH Hig:025H t= 38ms
 	jmp fin_set
 	
 PAGO_LARGO:
 	mov Contador_retardo_pago_l,#0FEH ;low: 0FEH Hig:025H t= 38ms
-	mov Contador_retardo_pago_h,#0E0H ;low: 0FEH Hig:025H t= 38ms
+	mov Contador_retardo_pago_h,#047H ;low: 0FEH Hig:025H t= 38ms
    jmp fin_set
 
 PAGO_CORTO:
@@ -2093,15 +2023,6 @@ push acc
 
 mov r0,#serial+1
 mov a,@r0
-jnz SIGUE_SET_PAGO
-mov Habilita_pago_TKE,#00H   ;deshabilita Pago TKE
-mov Habilita_pago_TKF,#00H   ;deshabilita Pago TKF
-clr IE.2   ;deshabilitar la int1
-jmp FIN_SET_PAGO
-
-SIGUE_SET_PAGO:
-mov r0,#serial+1
-mov a,@r0
 xrl a,#01H
 jnz PAGO_TKE_DIS
 
@@ -2124,28 +2045,12 @@ jmp fin_set_pago_TKF
 PAGO_TKF_DIS:
 mov Habilita_pago_TKF,#00H
 
-fin_set_pago_TKF: 
-;--------------
-mov r0,#serial+1
-mov a,@r0
-xrl a,#02H
-jnz PAGO_AUTO_DIS
-
-PAGO_AUTO_EN:
-mov Habilita_pago_AUTO,#0FFH
-jmp fin_set_pago_AUTO 
-PAGO_AUTO_DIS:
-mov Habilita_pago_AUTO,#00H
-
-fin_set_pago_AUTO: 
-;---------------
-
+fin_set_pago_TKF:
 mov r0,#serial+2
 mov Pago_opcion,@r0
 mov a,Pago_opcion
 anl a,#0FH
 mov Pago_opcion,acc
-
              
 xrl a,#00H
 jz S_D_12_A
@@ -2386,31 +2291,6 @@ pop PSW
 pop acc
 ret
 
-CARGA_NEGRO:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#BRG
-mov @r0,#00H
-mov r0,#BRG+1
-mov @r0,#00H
-mov r0,#BRG+2
-mov @r0,#00H
-mov r0,#BRG+3
-mov @r0,#00h
-mov r0,#BRG+4
-mov @r0,#00H
-mov r0,#BRG+5
-mov @r0,#00H
-
-pop acc
-mov r0,acc
-pop PSW
-pop acc
-ret
-
 GIRAR_Color:
 push acc
 push PSW
@@ -2451,113 +2331,6 @@ cmd_TX:
 pop acc
 pop PSW
 ret
-
-;=========Funcion de carga de luz de pago en variables
-
-LED_PAGO:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#serial+1
-mov LED1,@r0
-mov r0,#serial+2
-mov LED2,@r0
-mov r0,#serial+3
-mov LED3,@r0
-mov r0,#serial+4
-mov LED4,@r0
-mov r0,#serial+5
-mov LED5,@r0
-mov r0,#serial+6
-mov LED6,@r0
-
-pop acc
-mov r0,a
-pop PSW
-pop acc
-ret
-
-LED_PAGO2:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#serial+1
-mov LED7,@r0
-mov r0,#serial+2
-mov LED8,@r0
-mov r0,#serial+3
-mov LED9,@r0
-mov r0,#serial+4
-mov LED10,@r0
-mov r0,#serial+5
-mov LED11,@r0
-mov r0,#serial+6
-mov LED12,@r0
-
-pop acc
-mov r0,a
-pop PSW
-pop acc
-ret
-
-;========
-
-Carga_luz_pago_mem:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#BRG
-mov @r0,LED1
-mov r0,#BRG+1
-mov @r0,LED2
-mov r0,#BRG+2
-mov @r0,LED3
-mov r0,#BRG+3
-mov @r0,LED4
-mov r0,#BRG+4
-mov @r0,LED5
-mov r0,#BRG+5
-mov @r0,LED6
-
-pop acc
-mov r0,acc
-pop PSW
-pop acc
-ret
-
-Carga_luz_pago_mem2:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#BRG
-mov @r0,LED7
-mov r0,#BRG+1
-mov @r0,LED8
-mov r0,#BRG+2
-mov @r0,LED9
-mov r0,#BRG+3
-mov @r0,LED10
-mov r0,#BRG+4
-mov @r0,LED11
-mov r0,#BRG+5
-mov @r0,LED12
-
-
-pop acc
-mov r0,acc
-pop PSW
-pop acc
-ret
-
-
 
 TIMER2:
 push acc
@@ -2689,5 +2462,141 @@ nop
 nop
 nop
 nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+nop
+
 
 end                                           

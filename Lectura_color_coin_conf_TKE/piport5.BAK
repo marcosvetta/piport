@@ -2,23 +2,21 @@
 	LJMP PIPO				;Programa ppal
 	ORG 3
 	LJMP INTE				;Interrupcion 0
-	ORG 013H
-	LJMP INTE1				;Interrupcion 1
+;	ORG 013H
+;	LJMP INTE1				;Interrupcion 1
 	ORG 0Bh
 	LJMP TIMER0		  		;Timer 0
 ;	ORG 1BH
-;	LJMP TIMER1;CONTADOR			;Contador 1
+;	LJMP CONTADOR			;Contador 1
 	ORG 023H
 	LJMP SERIE           ;UART
-	ORG 2BH
-	LJMP TIMER2
-	
+
 ;------------------VARIABLES BIT A BIT 
 
 ORG 32
 	
-   CARD_DATA bit p2.6   ;p17
-   CARD_PRESENT bit p2.5 ;p15
+   CARD_DATA bit p1.7
+   CARD_PRESENT bit p1.5
    CARD_CLK bit p3.2
 
    FLAG_INT0 bit TCON.1
@@ -44,21 +42,6 @@ ORG 32
 	pulso_tkout bit P2.1
 	active bit P3.3
 		   
- 	WDRST DATA 0A6H
- 	AUXR DATA 08EH		
- 	
- 	TR2 bit 0C8H.2 
-	TF2 bit 0C8H.7
-	CT2 bit 0C8H.1
-	
-	T2CON DATA 0C8H
-	T2MOD DATA 0C9H
-	RCAP2L DATA 0CAH
-	RCAP2H DATA 0CBH
-	TL2 DATA 0CCH
-	TH2 DATA 0CDH
-   
- 	
 ;------------------VARIABLES
   ORG 48 
   
@@ -111,33 +94,12 @@ ORG 32
    Contador_retardol equ 89
    Contador_retardoh equ 92
 	
-	Habilita_pago_TKE equ 93
+	Habilita_pago equ 93
 	Pago_opcion equ 110
 	Pago_activo equ 111
 	
 	Error_card equ 63
-	Habilita_pago_TKF equ 62
 	
-	Contador_retardo_luzl equ 112
-	Contador_retardo_luzh equ 113
-
-	Habilita_pago_AUTO equ 114	 ;Autorecharger
-	Habilita_pago_TKA equ 115  ;ticket eater	
-	
-	LED1 equ 116	
-	LED2 equ 117
-	LED3 equ 118
-	LED4 equ 119
-	LED5 equ 120
-	LED6 equ 121
-	LED7 equ 122	
-	LED8 equ 123
-	LED9 equ 124
-	LED10 equ 125
-	LED11 equ 126
-	LED12 equ 127
-	
-			
 ;------------------ARRAY
   ORG 080H
   START_SEN: DS 14
@@ -166,7 +128,6 @@ ORG 32
 
 
 PIPO:	
-
 ;----------INTERRUPT0
 
  ; SETB IP0.0									;MAXIMA PIORIDAD A INT0
@@ -175,8 +136,7 @@ PIPO:
  ; CLR TCON.0									;nivel
 	SETB TCON.2
 	clr IE.2										;desHAB INT01
-	;SETB IE.0									;HAB INT0
-	clr IE.0									 ;desHAB INT0 18/5/2018
+	SETB IE.0									;HAB INT0
 	SETB IE.7									;HAB INTER EN GRAL
 
 ;------------TIMER0
@@ -188,7 +148,6 @@ PIPO:
 	setb EA											;hab. interrup. en gral(IE.7).
 	clr TR0	   									;paro el counter 0
 ;	setb TR0	   									;arranco el counter 0	       
-
 ;------------SERIAL
 	
 
@@ -206,54 +165,24 @@ PIPO:
 ;---------Timer 0
 ;	setb tr0	;arranco timer 1
 
-;;------------TIMER2
-;	
-	mov t2mod,#00h	
-	mov t2con,#00H
-	mov TL2,#0BFH;07Fh	
-	mov TH2,#0E0H;0FFh	
-;	mov TL2,#07Fh	
-;	mov TH2,#0FFh	
-	setb IE.5											;Hab. timer2 (IE.6)
-	;setb EA											;hab. interrup. en gral(IE.7).
-	clr TR2			   									;paro el timer 2
-	;setb TR2
 
-;---------------------
-
-
-;call Tiempo
 ;iniciializaciones
 mov Recive,#00H;#0FFh ;No recibe comunicacion serial
 mov Transmision_OK,#00H
-mov Flag_lectura_Tarjeta,#0FFH ;LECTURA DE TARJETA DESHABILITADA 26/6/2018
 call INI_VAR_READ ;Inicializa las variables de lectura de tarjeta
 Call INI_TIEMPO ;Inicializa las variables de comunicacion serie
 Call INI_PAGO
 ;call CP_CAD
-;call VERIFICAR_CADENA_FINAL
-mov Contador_retardo_luzl,#08H
-mov Contador_retardo_luzh,#01H ;;low: 08H Hig:02H t= 0,25ms   5/6/20018 cambio de 2 a 1
-
-mov Contador_retardo_coin_l,#0FEH ;low: 0FEH Hig:070H t= 115ms   20/7/2018
-mov Contador_retardo_coin_h,#070H ;low: 0FEH Hig:070H t= 115ms   20/7/2018
-
+call VERIFICAR_CADENA_FINAL
 ;==============================
 call Girar
 call INI_MEM
 call INI_LED
-;call RGB_LED    led en blanco lo saco por alta temperatura
-call MUTE_HAB
+call RGB_LED
+
 mov Contador_retardol,#010H ;low: 010H Hig:02H t= 0,5ms
 mov Contador_retardoh,#02H ;low: 010H Hig:02H t= 0,5ms
 call  RETARDO_0xms   ;22ms
-
-call INI_CMD
-;=========WDT
-;mov AUXR,#08H
-;setb TR2 ;activar timer2 para WDog 24/9
-;clr CT2 ;Depende de la frecuencia de clk
-;=========WDT
 
 LOOP:
 
@@ -266,20 +195,17 @@ LOOP:
 		 	jnz LAZ2 
 ;		 	   mov a,Tiempo_expire_total    ;paso el tiempo de rta maximo 600mseg
 ;		 	   jnz LAZ3
-				mov a,Habilita_pago_TKE
-				jnz PAYING_TKE
-				mov a,Habilita_pago_TKF
-				jnz PAYING_TKF
-				mov a,Habilita_pago_AUTO
-				jnz PAYING_TKF
 
+				mov a,Habilita_pago
+				jnz PAYING_TKE
 LOOP_1:
- mov a,Flag_lectura_tarjeta
- jnz LOOP
 			 	    mov a,Leyendo
 			 	    jnz READING    ;mira si mientras estaban las luces entro una tarjeta
 	jb CARD_PRESENT,LOOP  ;SI baja el card prersent va a leyendo tarjeta
 		jmp READING	 
+;    			mov a,Pagando ;Pagando/contando tikerts fisicos
+
+    			;jnz PAYING
     
 jmp LOOP
 
@@ -289,51 +215,61 @@ clr TR0 ; Paro el timer0
 jmp CHK_ENTRADA
 
 SW2_PRES:
-	mov Recive,#0FFh ;No recive  comunicacion serie
 	call carga_BRG_FUEGO
    call Buffer_fill_LED
  	mov Transmision_OK,#00H
- 	mov sbuf,#049H ;Boton 1
+ 	mov sbuf,#0B1H ;Boton 1
 SW_TX:
 	 	mov a,Transmision_OK
  		jz SW_TX
 		mov Transmision_OK,#00H
-		mov Recive,#00h ;Recive  comunicacion serie		
   	jmp LOOP
 
 SW1_PRES:
-	mov Recive,#0FFh ;No recive  comunicacion serie
 	call Hab_TTL
    call Carga_VERDE_CIAN
    call Buffer_fill_LED
  	mov Transmision_OK,#00H
- 	mov sbuf,#050H   ;Boton 2  
+ 	mov sbuf,#0B2H   ;Boton 2  
    jmp SW_TX
 
+
 READING:	
+	 
 	 jnb CARD_PRESENT,READING
-jmp LEER_TARJETA_TTL	 	
-  
-PAYING_TKF:
-   call MUTE_DES
-	
-mov a,Acumulador_pago ;Pagando/contando tikerts fisicos
-jz LOOP_1
-	mov sbuf,#041H  ;Pago de tickets fisico 'A'
-Pay_CTRLTKF:
-	 	mov a,Transmision_OK
- 		jz Pay_CTRLTKF
-  		mov Transmision_OK,#00H
-dec Acumulador_pago  		
+;-----------
+		clr IE.0 ;no puede entrar mas a leer la int
+		call VERIFICAR_CADENA ;Verifica cadena si llego al derecho o al reves
 
-	call carga_AMARILLO
-   call Buffer_fill_LED
-	call Girar_color
+;		mov veri,#0BH	
+;---------
+		mov a,Veri
+		cjne a,#0CH,VERIFICA_DIRECTO  ;comprueba si sale por error
+		    jmp FIN_LOOP ;Vuelve a empezar
+VERIFICA_DIRECTO:
+			cjne a,#0AH,VERIFICA_INVERTIDO
+            jmp ENVIAR_CAD
+VERIFICA_INVERTIDO:			
+           cjne a,#0BH,FIN_LOOP    ;ALgo raro no envia vuelve a empezar
+ENVIAR_CAD:
+		call VERIFICAR_CADENA_FINAL
+			mov a,Error_card
+			jnz FIN_LOOP
+		call SUMA30
+      call Enviar  ;Enviar por puerto serie
 
+call INI_MEM  ; inicializa la memoria de trabajo
+call INI_VAR_READ ;inicializa las varibles de lectura
+call Girar
+jmp LOOP
+
+FIN_LOOP:     	
+call INI_MEM  ; inicializa la memoria de trabajo
+call INI_VAR_READ ;inicializa las varibles de lectura
 jmp LOOP
 
 PAYING_TKE:
-				mov a,Pago_activo      ;Este valor se refiere si es x alto 00h o es x bajo 0ffh 
+				mov a,Pago_activo 
 			   jz CHEKA_P_B
 			  		jb active,PAYING_TKE1 ; Salta a Pagar Tikets pero Activo LOW
  					jmp LOOP_1
@@ -342,8 +278,7 @@ CHEKA_P_B:
 					jmp LOOP_1
 PAYING_TKE1:			   
 
-   call MUTE_DES
-   
+
 	mov sbuf,#040H  ;Pago de tickets @
 Pay_CTRL:
 	 	mov a,Transmision_OK
@@ -354,45 +289,7 @@ Pay_CTRL:
    ;esperar respuesta @
    ;pasado el timer vuelve aenviar el tk
 	  	call F_TKE
-
-
-	call CARGA_LUZ_PAGO_MEM
-   call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM	
-   call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM
-   call Buffer_fill_LED
-
-	call CARGA_LUZ_PAGO_MEM2
-   call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM2	
-   call Buffer_fill_LED
-	call CARGA_LUZ_PAGO_MEM2
-   call Buffer_fill_LED
-
-
-;	call Girar_color
-	  	
 jmp LOOP
-
-;PAYING_AUTO:
-;   call MUTE_DES
-;	
-;mov a,Acumulador_pago ;Pagando/contando tikerts fisicos
-;jz LOOP_1
-;	mov sbuf,#041H  ;Pago de tickets fisico 'A'
-;Pay_CTRLAUTO:
-;	 	mov a,Transmision_OK
-; 		jz Pay_CTRLAUTO
-;  		mov Transmision_OK,#00H
-;dec Acumulador_pago  		
-;
-;	call carga_AMARILLO
-;   call Buffer_fill_LED
-;	call Girar_color
-;
-;jmp LOOP
-
 
 CHK_ENTRADA:
  call CHAIN_CHK
@@ -418,40 +315,16 @@ CHK_ENTRADA:
 	jz ES_Des_TTL 
 
 	mov a,VALOR_CHAIN_CHK
-	xrl a,#028H  ;(
+	xrl a,#028H  ;'
 	jz ES_GIRO_N 
 
 	mov a,VALOR_CHAIN_CHK
-	xrl a,#029H  ;)
+	xrl a,#029H  ;'
 	jz ES_Tiempo 
 
 	mov a,VALOR_CHAIN_CHK
-	xrl a,#030H  ;0
+	xrl a,#030H  ;'
 	jz ES_HAB_PAGO 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#03AH  ; :
-	jz ES_HAB_MUTE 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#03CH  ; <
-	jz ES_DHAB_MUTE 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#031H  ; 1
-	jz ES_TIEMPO_GIRO 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#032H  ; 2
-	jz ES_GIRO_IZQ 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#033H  ; 2
-	jz ES_LED_PAGO 
-
-	mov a,VALOR_CHAIN_CHK
-	xrl a,#034H  ; 2
-	jz ES_LED_PAGO2 
 	
 	call INI_TIEMPO	
 	jmp LOOP
@@ -459,149 +332,39 @@ CHK_ENTRADA:
 ES_COLOR:
 		call CP_CAD
 		call Buffer_fill_LED
-      jmp ES_SALIDA1
+      jmp ES_SALIDA
 ES_COIN:
-;		call F_COIN
-;      call GIRAR1
-      jmp ES_SALIDAY
+		call F_COIN
+      call GIRAR1
+      jmp ES_SALIDA
 ES_GIRO:
       call GIRAR1
-      jmp ES_SALIDA1
+      jmp ES_SALIDA
 ES_Hab_TTL:
 		call Hab_TTL
-      jmp ES_SALIDAZ
+      jmp ES_SALIDA
 ES_Des_TTL:
 		call Des_TTL
-      jmp ES_SALIDAZ
+      jmp ES_SALIDA
 ES_GIRO_N:
       call GIRAR1
       call GIRAR1
-      jmp ES_SALIDA1
+      jmp ES_SALIDA
 ES_Tiempo:
 		call Seteo_tiempo
       jmp ES_SALIDA
 ES_HAB_PAGO:
 		call SET_PAGO
 		jmp ES_SALIDA
-ES_HAB_MUTE:
-		call MUTE_HAB
-		jmp ES_SALIDAT
-ES_DHAB_MUTE:
-		call MUTE_DES
-		jmp ES_SALIDAT
-ES_TIEMPO_GIRO:
-		call Tiempo_GIRO
-		jmp ES_SALIDA
-ES_GIRO_IZQ:
-		call GIRAR2
-		jmp ES_SALIDA1
-ES_LED_PAGO:
-		call LED_PAGO
-		jmp ES_SALIDA1
-ES_LED_PAGO2:
-		call LED_PAGO2
-		jmp ES_SALIDA1
-
 
 ES_SALIDA:
 		call INI_TIEMPO
-		mov sbuf,#055H      ;Confimacion de comandos U
-;---------------------------22/3/2018
-      jmp ES_CTRL
-ES_SALIDA1:
-		call INI_TIEMPO
-		mov sbuf,#056H    ;confirmacion de luces  con V
-;---------------------------18/4/2018     
-      jmp ES_CTRL
-ES_SALIDAT:
-		call INI_TIEMPO
-		mov sbuf,#054H      ;Confimacion de comandos T
-;---------------------------4/5/2018
-      jmp ES_CTRL
-ES_SALIDAY:
-		call INI_TIEMPO
-		mov sbuf,#059H      ;Confimacion de comandos Y
-;---------------------------18/4/2018
-		call F_COIN
-      call GIRAR1
-      jmp ES_CTRL
-ES_SALIDAZ:
-		call INI_TIEMPO
-		mov sbuf,#05AH      ;Confimacion de comandos Z
-;---------------------------18/4/2018
-;      jmp ES_CTRL
-
+		mov sbuf,#055H
 ES_CTRL:
 	 	mov a,Transmision_OK
  		jz ES_CTRL
   		mov Transmision_OK,#00H
   		jmp LOOP		
-
-LEER_TARJETA_TTL:
-;-----------
-      ;----------22/3/2018		
-		call Des_TTL
-      ;----------22/3/2018
-      		
-		clr IE.0 ;no puede entrar mas a leer la int
-		call VERIFICAR_CADENA ;Verifica cadena si llego al derecho o al reves
-;		mov veri,#0BH	
-;---------
-		mov a,Veri
-		cjne a,#0CH,VERIFICA_DIRECTO  ;comprueba si sale por error
-		    jmp FIN_LOOP ;Vuelve a empezar
-VERIFICA_DIRECTO:
-			cjne a,#0AH,VERIFICA_INVERTIDO
-            jmp ENVIAR_CAD
-VERIFICA_INVERTIDO:			
-           cjne a,#0BH,FIN_LOOP    ;ALgo raro no envia vuelve a empezar
-ENVIAR_CAD:
-		call SUMA30
-		call VERIFICAR_CADENA_FINAL
-			mov a,Error_card
-			jnz FIN_LOOP
-
-
-      call Enviar  ;Enviar por puerto serie
-
-      ;----------22/3/2018
-      ;mov Recive,#00H ;vuelvo a hab recepcion
-      ;---------22/3/2018
-
-call INI_MEM  ; inicializa la memoria de trabajo
-call INI_VAR_READ ;inicializa las varibles de lectura
-;call Girar   
-call INI_TIEMPO ;26/3/2018 reiniciba el buffer serie
-;---------------------------26/3/2018     
-mov Transmision_OK,#00H
-mov sbuf,#058H    ;Fin de giro X
-ES_CTRL3:
-	 	mov a,Transmision_OK
- 		jz ES_CTRL3
-  		mov Transmision_OK,#00H
-
-      mov Recive,#00H ;vuelvo a hab recepcion
-
-;---------------------------26/3/2018     
-jmp LOOP
-
-FIN_LOOP:     	
-;---------------------------22/3/2018     
-;mov a,Flag_lectura_tarjeta
-;jnz FIN_TARJ_ERROR
-mov Transmision_OK,#00H
-mov sbuf,#057H    ;Error de tarjeta W
-ES_CTRL2:
-	 	mov a,Transmision_OK
- 		jz ES_CTRL2
-  		mov Transmision_OK,#00H
-
-FIN_TARJ_ERROR:
-      mov Recive,#00H ;vuelvo a hab recepcion
-;---------------------------22/3/2018     
-call INI_MEM  ; inicializa la memoria de trabajo
-call INI_VAR_READ ;inicializa las varibles de lectura
-jmp LOOP
 
 ;------------------------------INTE
 INTE:
@@ -609,10 +372,7 @@ push acc
 push PSW
 mov a,r0
 push acc
-      ;----------22/3/2018
-      mov Recive,#0FFH ;freno cualquier recepcion
-      ;---------22/3/2018
-      
+   
       mov a,Leyendo  ;Se fija si es el primer uno
 		jnz SIGUE_INTE  ;si Letynedo sigue en 00  
 			jb CARD_DATA,FIN_INTE    ;si es un cero negado sale todavia no entro ningun 1
@@ -677,20 +437,12 @@ INTE1:
 clr IE.2
 push acc
 push PSW
-
-         call Tiempox4
-         call Tiempox4         
-         call Tiempox4         
-			jb p3.3,fin_inte1
-         call Tiempox4         
-         call Tiempox4
-         call Tiempox4         
-			jb p3.3,fin_inte1
-         call Tiempox4
-         call Tiempox4         
-         call Tiempox4  
-         call Tiempox4                                        
-			jb p3.3,fin_inte1
+         call Tiempo
+			jb p3.3,FIN_INTE1
+;         call Tiempo
+;			jb p3.3,fin_inte1
+;        call Tiempo
+;			jb p3.3,fin_inte1
 
 mov Pagando,#0FFH
 inc acumulador_pago 
@@ -707,8 +459,7 @@ inc acumulador_pago
 FIN_INTE1:
 pop PSW
 pop acc
-SETB IE.2
-clr IE1	
+SETB IE.2	
 reti
 
 ;---------------------------SERIE
@@ -717,9 +468,6 @@ push acc
 push PSW
 mov acc,r1
 push acc
-
-;mov WDRST,#01EH
-;mov WDRST,#0E1H
 
 	jb RI,Rxon
 	jb TI,Txon
@@ -772,9 +520,6 @@ reti
 TIMER0:
 push acc
 push PSW
-
-;mov WDRST,#01EH
-;mov WDRST,#0E1H
 
 	mov a,Tiempo_inter_byte
 	jz NO_INTERBYTE
@@ -1107,7 +852,7 @@ Mirar_cadena:
 	inc r0
 	inc Desplazamiento
 	mov a,Desplazamiento
-	cjne a,#0DH,Mirar_cadena
+	cjne a,#0BH,Mirar_cadena
    	jmp NO_ERROR_FINAL
 
 ERROR_FINAL:
@@ -1155,26 +900,14 @@ ret
 
 
 Hab_TTL:
-push acc
-push PSW
-
 clr IE0
 setb IE.0
 mov Flag_lectura_Tarjeta,#00H
-
-pop PSW
-pop acc
 ret
 
 Des_TTL:
-push acc
-push PSW
-
 clr IE.0
 mov Flag_lectura_Tarjeta,#0FFH
-
-pop PSW
-pop acc
 ret
 
 
@@ -1617,16 +1350,12 @@ UNO:
 clr DATAled
 sigue_r:
 cpl CLKled 
-;mov Contador_retardol,#08H ;low: 08H Hig:02H t= 0,25ms
-;mov Contador_retardoh,#01H ;;low: 08H Hig:02H t= 0,25ms   4/6/20018 cambio de 2 a 1
-mov Contador_retardol,Contador_retardo_luzl
-mov Contador_retardoh,Contador_retardo_luzh ;;low: 08H Hig:02H t= 0,25ms   4/6/20018 cambio de 2 a 1
+mov Contador_retardol,#08H ;low: 08H Hig:02H t= 0,25ms
+mov Contador_retardoh,#02H ;;low: 08H Hig:02H t= 0,25ms
 call  RETARDO_0xms
 cpl CLKled 
-mov Contador_retardol,Contador_retardo_luzl
-mov Contador_retardoh,Contador_retardo_luzh ;;low: 08H Hig:02H t= 0,25ms   4/6/20018 cambio de 2 a 1
-;mov Contador_retardol,#08H ;low: 02H Hig:08H t= 0,25ms	 4/6/20018 cambio de 2 a 1
-;mov Contador_retardoh,#01H ;low: 02H Hig:08H t= 0,25ms
+mov Contador_retardol,#02H ;low: 08H Hig:02H t= 0,25ms
+mov Contador_retardoh,#08H ;low: 08H Hig:02H t= 0,25ms
 call  RETARDO_0xms
 
 djnz contador_rojo,lazo_rojo
@@ -1646,57 +1375,11 @@ pop acc
 ret
 
 
-Rotar_LEDI:
-push acc
-push PSW
-mov a,r0
-push acc
-
-;mov WDRST,#01EH
-;mov WDRST,#0E1H
-
-mov r0,#BRG+5
-mov Contador_RC,#00H
-mov B,#00h
-
-clr c
-
-SIGUE_RR:
-
-mov c,b.7
-
-mov a,@r0
-rlc a
-mov @r0,a
-
-mov b.7,c
-
-dec r0
-
-inc Contador_RC
-mov a,Contador_RC 		  
-cjne a,#06H,SIGUE_RR	
-
-mov r0,#BRG+5
-mov a,@r0
-mov c,b.7
-mov acc.0,c
-mov @r0,a
-
-pop acc
-mov r0,a
-pop PSW
-pop acc
-ret
-
 Rotar_LED:
 push acc
 push PSW
 mov a,r0
 push acc
-
-;mov WDRST,#01EH
-;mov WDRST,#0E1H
 
 mov r0,#BRG
 mov Contador_RC,#00H
@@ -1747,61 +1430,15 @@ GIRA_INI:
  jz fill
   	mov r0,Contador_G
 ROTA_FILL: 
-      ;---------------------------21/3/2018
-	
-	;	jnb CARD_PRESENT,FIN_GIRAR1  ;SI baja el card prersent va a leyendo tarjeta      ;21/3/2018
-                                   ;corta lo que esta haciendo y envia tarjeta  21/3/2018
-     ;-----------------------------
-
   	call Rotar_led
   	call Rotar_led
   	call Rotar_led
   	djnz r0,ROTA_FILL
    
 fill: 
-      
   call Buffer_fill_LED
   inc contador_G
 djnz Contador_G1,GIRA_INI
-
-FIN_GIRAR1:
-
-pop PSW
-pop acc
-ret
-
-GIRAR2:
-push acc
-push PSW
-
- mov contador_G,#00H
- mov contador_G1,#010H
-
-GIRA_INI2:
-
- call CP_CAD 
- mov a,contador_G
- jz fill2
-  	mov r0,Contador_G
-ROTA_FILL2: 
-      ;---------------------------21/3/2018
-	
-	;	jnb CARD_PRESENT,FIN_GIRAR1  ;SI baja el card prersent va a leyendo tarjeta      ;21/3/2018
-                                   ;corta lo que esta haciendo y envia tarjeta  21/3/2018
-     ;-----------------------------
-
-  	call Rotar_ledI
-  	call Rotar_ledI
-  	call Rotar_ledI
-  	djnz r0,ROTA_FILL2
-   
-fill2: 
-      
-  call Buffer_fill_LED
-  inc contador_G
-djnz Contador_G1,GIRA_INI2
-
-FIN_GIRAR2:
 
 pop PSW
 pop acc
@@ -1979,9 +1616,6 @@ pop PSW
 Ret
 
 INI_PAGO:
-push acc
-push PSW
-
 clr ctrl_b_out
 setb ctrl_a_out
 ;clr out_inh
@@ -1992,21 +1626,9 @@ clr ctrl_a_in
 ;clr in_inh 
 setb in_inh 
 
-;===================TKE
-mov Habilita_pago_TKE,#00H
+mov Habilita_pago,#00H
 mov Pago_activo,#00h
-;--------------------
-;=================TKF
-mov Acumulador_pago,#00h
-mov Habilita_pago_TKF,#00H
-mov Pagando,#00H
-;-------------------
-;=================AUTO
-mov Habilita_pago_AUTO,#00H
 
-
-pop PSW
-pop acc
 ret
 
 Seteo_tiempo:
@@ -2040,8 +1662,8 @@ COIN_LARGO:
    jmp SETEO_PAGO
 
 COIN_CORTO:
-	mov Contador_retardo_coin_l,#07FH ;low: 0FEH Hig:030H t= 10ms
-	mov Contador_retardo_coin_h,#0CH ;low: 07FH Hig:00cH t= 10ms
+	mov Contador_retardo_coin_l,#07FH ;low: 0FEH Hig:030H t= 65ms
+	mov Contador_retardo_coin_h,#030H ;low: 0FEH Hig:030H t= 65ms
    jmp SETEO_PAGO
 
 SETEO_PAGO:
@@ -2061,12 +1683,12 @@ jz PAGO_CORTO
 
 PAGO_NORMAL:
 	mov Contador_retardo_pago_l,#0FEH ;low: 0FEH Hig:025H t= 38ms
-	mov Contador_retardo_pago_h,#070H ;low: 0FEH Hig:025H t= 38ms
+	mov Contador_retardo_pago_h,#025H ;low: 0FEH Hig:025H t= 38ms
 	jmp fin_set
 	
 PAGO_LARGO:
 	mov Contador_retardo_pago_l,#0FEH ;low: 0FEH Hig:025H t= 38ms
-	mov Contador_retardo_pago_h,#0E0H ;low: 0FEH Hig:025H t= 38ms
+	mov Contador_retardo_pago_h,#047H ;low: 0FEH Hig:025H t= 38ms
    jmp fin_set
 
 PAGO_CORTO:
@@ -2093,52 +1715,14 @@ push acc
 
 mov r0,#serial+1
 mov a,@r0
-jnz SIGUE_SET_PAGO
-mov Habilita_pago_TKE,#00H   ;deshabilita Pago TKE
-mov Habilita_pago_TKF,#00H   ;deshabilita Pago TKF
-clr IE.2   ;deshabilitar la int1
-jmp FIN_SET_PAGO
-
-SIGUE_SET_PAGO:
-mov r0,#serial+1
-mov a,@r0
 xrl a,#01H
-jnz PAGO_TKE_DIS
+jz PAGO_DIS
 
-PAGO_TKE_EN:
-mov Habilita_pago_TKE,#0FFH
-jmp fin_set_pago_TKE 
-PAGO_TKE_DIS:
-mov Habilita_pago_TKE,#00H
-
-fin_set_pago_TKE: 
-mov r0,#serial+1
-mov a,@r0
-anl a,#0F0H
-xrl a,#010H
-jnz PAGO_TKF_DIS
-
-PAGO_TKF_EN:
-mov Habilita_pago_TKF,#0FFH
-jmp fin_set_pago_TKF 
-PAGO_TKF_DIS:
-mov Habilita_pago_TKF,#00H
-
-fin_set_pago_TKF: 
-;--------------
-mov r0,#serial+1
-mov a,@r0
-xrl a,#02H
-jnz PAGO_AUTO_DIS
-
-PAGO_AUTO_EN:
-mov Habilita_pago_AUTO,#0FFH
-jmp fin_set_pago_AUTO 
-PAGO_AUTO_DIS:
-mov Habilita_pago_AUTO,#00H
-
-fin_set_pago_AUTO: 
-;---------------
+PAGO_EN:
+mov Habilita_pago,#00H
+jmp fin_set_pago 
+PAGO_DIS:
+mov Habilita_pago,#0FFH
 
 mov r0,#serial+2
 mov Pago_opcion,@r0
@@ -2146,7 +1730,6 @@ mov a,Pago_opcion
 anl a,#0FH
 mov Pago_opcion,acc
 
-             
 xrl a,#00H
 jz S_D_12_A
    mov a,Pago_opcion
@@ -2288,27 +1871,15 @@ mov Pago_activo,#00h
 jmp FIN_SET_PAGO 
 
 E_D_TKF_A:
-clr IE.2   ;deshabilitar la int1
-
 jmp FIN_SET_PAGO 
 
 E_D_TKF_B:
-clr IE.2   ;deshabilitar la int1
-
 jmp FIN_SET_PAGO 
 
 E_H_TKF_A:
-clr ctrl_b_in
-clr ctrl_a_in
-clr in_inh
-setb IE.2   ;habilitar la int1
 jmp FIN_SET_PAGO 
 
 E_H_TKF_B:
-clr ctrl_b_in
-clr ctrl_a_in
-clr in_inh
-setb IE.2   ;habilitar la int1
 jmp FIN_SET_PAGO 
 
 
@@ -2320,374 +1891,5 @@ pop PSW
 pop acc
 ret 
 
-Tiempox4:
-call Tiempo
-call Tiempo
-call Tiempo
-call Tiempo
-ret
-
-MUTE_HAB:
-clr p2.7
-ret
-
-MUTE_DES:
-setb p2.7
-ret
-
-
-Tiempo_GIRO:
-;--------------------------------------
-;Velocidad de tiempo de giro
-;Se pasa parametro 0x31,Tiempol,TiempoH
-;Por defecto se va a pasar Hig:0x01 y LOW:0x08
-;---------------------------------------
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#serial+1
-mov a,@r0
-mov Contador_retardo_luzl,a ;low: 08H Hig:02H t= 0,125ms
-mov r0,#serial+2
-mov a,@r0
-mov Contador_retardo_luzh,a ;low: 08H Hig:02H t= 0,125ms   4/6/20018 cambio de 2 a 1
-
-pop acc
-mov r0,a
-pop PSW
-pop acc
-ret
-
-
-CARGA_AMARILLO:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#BRG
-mov @r0,#0DBH
-mov r0,#BRG+1
-mov @r0,#06DH
-mov r0,#BRG+2
-mov @r0,#0B6H
-mov r0,#BRG+3
-mov @r0,#0DBh
-mov r0,#BRG+4
-mov @r0,#06DH
-mov r0,#BRG+5
-mov @r0,#0B7H
-
-pop acc
-mov r0,acc
-pop PSW
-pop acc
-ret
-
-CARGA_NEGRO:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#BRG
-mov @r0,#00H
-mov r0,#BRG+1
-mov @r0,#00H
-mov r0,#BRG+2
-mov @r0,#00H
-mov r0,#BRG+3
-mov @r0,#00h
-mov r0,#BRG+4
-mov @r0,#00H
-mov r0,#BRG+5
-mov @r0,#00H
-
-pop acc
-mov r0,acc
-pop PSW
-pop acc
-ret
-
-GIRAR_Color:
-push acc
-push PSW
-
- mov contador_G,#00H
- mov contador_G1,#010H
-
-GIRA_INI1c:
-
- call Carga_AMARILLO
- mov a,contador_G
- jz fill1c
-  	mov r0,Contador_G
-ROTA_FILL1c: 
-  	call Rotar_led
-  	call Rotar_led
-  	call Rotar_led
-  	djnz r0,ROTA_FILL1c
-   
-fill1c: 
-  call Buffer_fill_LED
-  inc contador_G
-djnz Contador_G1,GIRA_INI1c
-
-pop PSW
-pop acc
-ret
-
-INI_CMD:
-push PSW
-push acc
- 	mov Transmision_OK,#00H
- 	mov sbuf,#042H ; envio B  para indicar inicio
-cmd_TX:
-	 	mov a,Transmision_OK
- 		jz cmd_TX
-		mov Transmision_OK,#00H
-pop acc
-pop PSW
-ret
-
-;=========Funcion de carga de luz de pago en variables
-
-LED_PAGO:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#serial+1
-mov LED1,@r0
-mov r0,#serial+2
-mov LED2,@r0
-mov r0,#serial+3
-mov LED3,@r0
-mov r0,#serial+4
-mov LED4,@r0
-mov r0,#serial+5
-mov LED5,@r0
-mov r0,#serial+6
-mov LED6,@r0
-
-pop acc
-mov r0,a
-pop PSW
-pop acc
-ret
-
-LED_PAGO2:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#serial+1
-mov LED7,@r0
-mov r0,#serial+2
-mov LED8,@r0
-mov r0,#serial+3
-mov LED9,@r0
-mov r0,#serial+4
-mov LED10,@r0
-mov r0,#serial+5
-mov LED11,@r0
-mov r0,#serial+6
-mov LED12,@r0
-
-pop acc
-mov r0,a
-pop PSW
-pop acc
-ret
-
-;========
-
-Carga_luz_pago_mem:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#BRG
-mov @r0,LED1
-mov r0,#BRG+1
-mov @r0,LED2
-mov r0,#BRG+2
-mov @r0,LED3
-mov r0,#BRG+3
-mov @r0,LED4
-mov r0,#BRG+4
-mov @r0,LED5
-mov r0,#BRG+5
-mov @r0,LED6
-
-pop acc
-mov r0,acc
-pop PSW
-pop acc
-ret
-
-Carga_luz_pago_mem2:
-push acc
-push PSW
-mov a,r0
-push acc
-
-mov r0,#BRG
-mov @r0,LED7
-mov r0,#BRG+1
-mov @r0,LED8
-mov r0,#BRG+2
-mov @r0,LED9
-mov r0,#BRG+3
-mov @r0,LED10
-mov r0,#BRG+4
-mov @r0,LED11
-mov r0,#BRG+5
-mov @r0,LED12
-
-
-pop acc
-mov r0,acc
-pop PSW
-pop acc
-ret
-
-
-
-TIMER2:
-push acc
-push PSW
-
-mov AUXR,#08H; arrancar el WDT
-
-mov WDRST,#01EH
-mov WDRST,#0E1H
-mov TL2,#0BFh	
-mov TH2,#0E0h	
-;mov TL2,#07Fh	
-;mov TH2,#0FFh	
-
- ; clr TF2
- ; clr TR2
-  
-pop PSW
-pop acc
-reti
-
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
-nop
 
 end                                           

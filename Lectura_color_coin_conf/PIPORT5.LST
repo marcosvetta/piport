@@ -1,0 +1,1896 @@
+MACRO ASSEMBLER PIPORT5                                     08/31/117 15:23:41 PAGE     1
+
+
+WIN32 MACRO ASSEMBLER A51 V6.02.30
+OBJECT MODULE PLACED IN C:\DOCUMENTS AND SETTINGS\ADMINISTRADOR\MY DOCUMENTS\PIPORT\FIRMWARE\PIPORT5.OBJ
+ASSEMBLER INVOKED BY: A51.EXE C:\DOCUMENTS AND SETTINGS\ADMINISTRADOR\MY DOCUMENTS\PIPORT\FIRMWARE\PIPORT5.ASM OJ(C:\DOCUMENTS AND SETTINGS\ADMINISTRADOR\MY DOCUMENTS\PIPORT\FIRMWARE\PIPORT5.OBJ) PIN(C:\FSI\INC) EP LINES PR(C:\DOCUMENTS AND SETTINGS\ADMINISTRADOR\MY DOCUMENTS\PIPORT\FIRMWARE\PIPORT5.LST) XR DB PW(80) RB(0) 
+
+LOC     OBJ           LINE    SOURCE
+  0000                   1    	ORG 0
+0000    020300           2    	LJMP PIPO				;PROGRAMA PPAL
+  0003                   3    	ORG 3
+0003    020414           4    	LJMP INTE				;INTERRUPCION 0
+                         5    ;	ORG 013H
+                         6    ;	LJMP INTE1				;INTERRUPCION 1
+  000B                   7    	ORG 0BH
+000B    0204BA           8    	LJMP TIMER0		  		;TIMER 0
+                         9    ;	ORG 1BH
+                        10    ;	LJMP CONTADOR			;CONTADOR 1
+  0023                  11    	ORG 023H
+0023    020470          12    	LJMP SERIE           ;UART
+                        13    
+                        14    ;------------------VARIABLES BIT A BIT 
+                        15    
+  0020                  16    ORG 32
+                        17    	
+  0097                  18       CARD_DATA BIT P1.7
+  0095                  19       CARD_PRESENT BIT P1.5
+  00B2                  20       CARD_CLK BIT P3.2
+                        21    
+  0089                  22       FLAG_INT0 BIT TCON.1
+  008B                  23       FLAG_INT1 BIT TCON.3
+                        24          
+  00A4                  25       LLED BIT P2.4
+  00A3                  26       CLKLED BIT P2.3
+  00A2                  27       DATALED BIT P2.2
+                        28       
+  00B4                  29       SW1 BIT P3.4
+  00B5                  30       SW2 BIT P3.5
+                        31       
+  00A0                  32       COIN BIT P2.0
+                        33    
+  0090                  34    	CTRL_A_OUT BIT P1.0
+  0091                  35    	CTRL_B_OUT BIT P1.1
+  00B7                  36    	OUT_INH BIT P3.7
+                        37    
+  0092                  38    	CTRL_A_IN BIT P1.2	
+  0093                  39    	CTRL_B_IN BIT P1.3	
+  0094                  40    	IN_INH BIT P1.4	
+                        41    
+  00A1                  42    	PULSO_TKOUT BIT P2.1
+                        43    		   
+                        44    ;------------------VARIABLES
+  0030                  45      ORG 48 
+                        46      
+                        47    ;	CONTADOR_ EQU 92
+  005E                  48    	BYTE_ACTUAL EQU 94 ;VARIABLE DE SALIDA DE FUNCION1 CON LOS BIT DE CARD_DATA 
+  005F                  49    	LEYENDO EQU 95 ;VARIABLE QUE INDICA QUE INGRESO EN LA INT0
+  0060                  50    	ITERA EQU 96	  ;VAR DE ITERACION PARA FUNCION 1
+  0061                  51    	PAQUETE_FULL EQU 97
+  0062                  52    	LARGO_DATA EQU 98
+  0063                  53    	VERI EQU 99  ;VARIABLE DE SALIDA DE LA FUNCION VERIFICAR_CADENA SI ES A=DIRECTO, B-INVERIDA Y C=ERROR
+  0064                  54       TRANSMISION_OK EQU 100
+  0065                  55    	VALORLRC EQU 101   
+  0066                  56    	DESPLAZAMIENTO EQU 102
+  0067                  57    	CONTADOR_ACOMODAR_CADENA EQU 103
+  0068                  58    	DIRECCION_ACTUAL EQU 104
+  0069                  59    	CONTADOR_PERMUTAR EQU 105
+  006A                  60    	CONTADOR_RC EQU 106	
+  006B                  61    	CONTADOR_GC EQU 107
+  006C                  62    	VAR_INI_LED EQU 108	
+  006D                  63    	CONTADOR_ROJO EQU 109	
+  005A                  64    	CONTADOR_G EQU 90
+  005B                  65    	CONTADOR_G1 EQU 91
+                        66    
+  0040                  67    	RECIVE EQU   64  ;CON 0 RECIVE DISTINTO DE CERO NO RECIVE   
+  0041                  68       TIEMPO_EXPIRE EQU 65
+  0042                  69       TIEMPO_EXPIRE_TOTAL EQU 66
+  0043                  70       CUENTA_BYTE EQU 67
+  0044                  71       LARGO_CADENA EQU 68
+  0045                  72       TIEMPO_INTER_BYTE EQU 69
+  0046                  73       TIEMPO_IBYTEL EQU 70
+  0047                  74       TIEMPO_IBYTEH EQU 71
+  0048                  75       VALOR_TIBYTEL EQU 72
+  0049                  76       VALOR_TIBYTEH EQU 73
+  004A                  77       TIEMPO_ETL EQU 74
+  004B                  78       TIEMPO_ETH EQU 75
+  004C                  79       VALOR_TETL EQU 76
+  004D                  80       VALOR_TETH EQU 77
+  004E                  81       VALOR_CUENTA_BYTE EQU 78
+  004F                  82       T_EXPIRE_TOTAL EQU 79
+  0050                  83       INICIO EQU 80
+  0051                  84       VALOR_CHAIN_CHK EQU 81
+  0052                  85       CONTADOR_RETARDO8L EQU 82
+  0053                  86       CONTADOR_RETARDO8H EQU 83
+  0054                  87    	FLAG_LECTURA_TARJETA EQU 84   
+                        88    	
+                        89    ;------------------ARRAY
+  0080                  90      ORG 080H
+0080                    91    START_SEN:   DS 14
+  008E                  92      ORG 08EH
+008E                    93    END_SEN:  DS 1
+  008F                  94      ORG 08FH
+008F                    95    LRC1:   DS 1
+                        96    
+  0090                  97      ORG 090H  
+0090                    98    START_SEN2:   DS 14
+  009E                  99      ORG 09EH
+009E                   100    END_SEN2:  DS 1
+  009F                 101      ORG 09FH
+009F                   102    LRC2:   DS 1  
+                       103     
+  00B0                 104      ORG 0B0H     ;0A0H
+00B0                   105    BRG:   DS 6
+                       106    
+  00C0                 107      ORG 0C0H     ;0B0H
+00C0                   108    SERIAL:   DS 16
+                       109      
+                       110      
+                       111    ;------------------PROGRAMA
+  0300                 112      ORG 0300H
+                       113    ;XRESET:
+                       114    
+                       115    
+                       116    PIPO:  	
+                       117    ;----------INTERRUPT0
+                       118    
+                       119     ; SETB IP0.0									;MAXIMA PIORIDAD A INT0
+0300    D288           120    	SETB TCON.0						
+                       121      ;FLANCO DESC
+                       122     ; CLR TCON.0									;NIVEL
+0302    D28A           123    	SETB TCON.2
+0304    C2AA           124    	CLR IE.2										;DESHAB INT01
+0306    D2A8           125    	SETB IE.0									;HAB INT0
+0308    D2AF           126    	SETB IE.7									;HAB INTER EN GRAL
+                       127    
+                       128    ;------------TIMER0
+                       129    	
+030A    758901         130    	MOV TMOD,#01H	                       ;PERMITE HAB O DESH EL TIMING
+030D    758A01         131    	MOV TL0,#01H	
+0310    758C00         132    	MOV TH0,#00H	
+0313    D2A9           133    	SETB ET0											;HAB. TIMER0 (IE.1)
+0315    D2AF           134    	SETB EA											;HAB. INTERRUP. EN GRAL(IE.7).
+0317    C28C           135    	CLR TR0	   									;PARO EL COUNTER 0
+                       136    ;	SETB TR0	   									;ARRANCO EL COUNTER 0	       
+                       137    ;------------SERIAL
+                       138    	
+                       139    
+0319    C29F           140    	CLR SM0
+031B    D29E           141    	SETB SM1	;MODO 1
+031D    D29C           142    	SETB SCON.4 ;HABILITAR LA RECEPCION SERAIL
+031F    D2AF           143    	SETB IE.7	;HAB. DE INT GRAL.
+0321    D2AC           144    	SETB IE.4	;Y SERIE
+0323    758DFC         145    	MOV TH1,#0FCH	;DET EL BAUD RATE
+0326    758BFC         146    	MOV TL1,#0FCH
+0329    758920         147    	MOV TMOD,#20H	;TIMER1 MODO 2
+                       148    	;CLR ES
+032C    D2AC           149    	SETB ES
+032E    D28E           150    	SETB TR1	;ARRANCO TIMER 1
+                       151    ;---------TIMER 0
+                       152    ;	SETB TR0	;ARRANCO TIMER 1
+                       153    
+                       154    
+                       155    ;INICIIALIZACIONES
+0330    754000         156    MOV 64 , # 00H 
+0333    756400         157    MOV 100 , # 00H 
+0336    120555         158    CALL INI_VAR_READ ;INICIALIZA LAS VARIABLES DE LECTURA
+0339    12066D         159    CALL INI_TIEMPO
+                       160    
+                       161    ;CALL CP_CAD
+                       162    
+                       163    ;==============================
+033C    1208E2         164    CALL GIRAR
+033F    1206AC         165    CALL INI_MEM
+0342    1207D4         166    CALL INI_LED
+0345    1207ED         167    CALL RGB_LED
+                       168    
+                       169    LOOP:  
+                       170    
+0348    30B42D         171     JNB SW1,SW1_PRES
+034B    30B515         172     JNB SW2,SW2_PRES
+                       173    
+                       174    ;		MOV ACC,CUENTA_BYTE
+                       175    ;		JZ	LAZ1
+034E    E541           176    MOV A , 65 
+0350    700C           177    		 	JNZ LAZ2 
+                       178    ;		 	   MOV A,TIEMPO_EXPIRE_TOTAL    ;PASO EL TIEMPO DE RTA MAXIMO 600MSEG
+                       179    ;		 	   JNZ LAZ3
+0352    E55F           180    MOV A , 95 
+0354    7033           181    		 	    JNZ READING    ;MIRA SI MIENTRAS ESTABAN LAAS LUCES ENTRO UNA TARJETA
+0356    2095EF         182    	JB CARD_PRESENT,LOOP  ;SI BAJA EL CARD PRERSENT VA A LEYENDO TARJETA
+0359    020389         183    		JMP READING	 
+                       184    
+035C    80EA           185    JMP LOOP
+                       186    
+                       187    
+                       188    LAZ2:   ;CUANDO SE SUPERA EL TIEMPO INTERBYE ANALIZA LO QUE LLEGA Y ACTUA
+035E    C28C           189    CLR TR0 ; PARO EL TIMER0
+0360    0203BB         190    JMP CHK_ENTRADA
+                       191    
+                       192    SW2_PRES:  
+0363    120806         193    	CALL CARGA_BRG_FUEGO
+0366    120856         194       CALL BUFFER_FILL_LED
+0369    756400         195    MOV 100 , # 00H 
+036C    7599B1         196     	MOV SBUF,#0B1H ;BOTON 1
+                       197    SW_TX:  
+036F    E564           198    MOV A , 100 
+0371    60FC           199     		JZ SW_TX
+0373    756400         200    MOV 100 , # 00H 
+0376    80D0           201      	JMP LOOP
+                       202    
+                       203    SW1_PRES:  
+0378    12065F         204    	CALL HAB_TTL
+037B    12082E         205       CALL CARGA_VERDE_CIAN
+037E    120856         206       CALL BUFFER_FILL_LED
+0381    756400         207    MOV 100 , # 00H 
+0384    7599B2         208     	MOV SBUF,#0B2H   ;BOTON 2  
+0387    80E6           209       JMP SW_TX
+                       210    
+                       211    
+                       212    READING:  	
+                       213    	 
+0389    3095FD         214    	 JNB CARD_PRESENT,READING
+                       215    ;-----------
+038C    C2A8           216    		CLR IE.0 ;NO PUEDE ENTRAR MAS A LEER LA INT
+038E    12057A         217    		CALL VERIFICAR_CADENA ;VERIFICA CADENA SI LLEGO AL DERECHO O AL REVES
+                       218    ;		MOV VERI,#0BH	
+                       219    ;---------
+0391    E563           220    MOV A , 99 
+0393    B40C03         221    		CJNE A,#0CH,VERIFICA_DIRECTO  ;COMPRUEBA SI SALE POR ERROR
+0396    0203B3         222    		    JMP FIN_LOOP ;VUELVE A EMPEZAR
+                       223    VERIFICA_DIRECTO:  
+0399    B40A03         224    			CJNE A,#0AH,VERIFICA_INVERTIDO
+039C    0203A2         225                JMP ENVIAR_CAD
+                       226    VERIFICA_INVERTIDO:  			
+039F    B40B11         227               CJNE A,#0BH,FIN_LOOP    ;ALGO RARO NO ENVIA VUELVE A EMPEZAR
+                       228    ENVIAR_CAD:  
+03A2    1206CF         229    		CALL SUMA30
+03A5    120526         230          CALL ENVIAR  ;ENVIAR POR PUERTO SERIE
+                       231    
+03A8    1206AC         232    CALL INI_MEM  ; INICIALIZA LA MEMORIA DE TRABAJO
+03AB    120555         233    CALL INI_VAR_READ ;INICIALIZA LAS VARIBLES DE LECTURA
+03AE    1208E2         234    CALL GIRAR
+03B1    8095           235    JMP LOOP
+                       236    
+                       237    FIN_LOOP:       	
+03B3    1206AC         238    CALL INI_MEM  ; INICIALIZA LA MEMORIA DE TRABAJO
+03B6    120555         239    CALL INI_VAR_READ ;INICIALIZA LAS VARIBLES DE LECTURA
+03B9    808D           240    JMP LOOP
+                       241    
+                       242    CHK_ENTRADA:  
+03BB    12093A         243     CALL CHAIN_CHK
+                       244    
+03BE    E551           245    MOV A , 81 
+03C0    6424           246    	XRL A,#024H  ;!
+03C2    601D           247    	JZ ES_COLOR 
+                       248    
+03C4    E551           249    MOV A , 81 
+03C6    642A           250    	XRL A,#02AH  ;*
+03C8    6020           251    	JZ ES_COIN 
+                       252    
+03CA    E551           253    MOV A , 81 
+03CC    6425           254    	XRL A,#025H  ;%
+03CE    6023           255    	JZ ES_GIRO 
+                       256    
+03D0    E551           257    MOV A , 81 
+03D2    6426           258    	XRL A,#026H  ;&
+03D4    6023           259    	JZ ES_HAB_TTL 
+                       260    
+03D6    E551           261    MOV A , 81 
+03D8    6427           262    	XRL A,#027H  ;'
+03DA    6023           263    	JZ ES_DES_TTL 
+                       264    	
+03DC    12066D         265    	CALL INI_TIEMPO	
+03DF    6148           266    	JMP LOOP
+                       267    
+                       268    ES_COLOR:  
+03E1    120908         269    		CALL CP_CAD
+03E4    120856         270    		CALL BUFFER_FILL_LED
+03E7    020405         271          JMP ES_SALIDA
+                       272    ES_COIN:  
+03EA    12094E         273    		CALL F_COIN
+03ED    1208BB         274          CALL GIRAR1
+03F0    020405         275          JMP ES_SALIDA
+                       276    ES_GIRO:  
+03F3    1208BB         277          CALL GIRAR1
+03F6    020405         278          JMP ES_SALIDA
+                       279    ES_HAB_TTL:  
+03F9    12065F         280    		CALL HAB_TTL
+03FC    020405         281          JMP ES_SALIDA
+                       282    ES_DES_TTL:  
+03FF    120667         283    		CALL DES_TTL
+0402    020405         284          JMP ES_SALIDA
+                       285    ES_SALIDA:  
+0405    12066D         286    		CALL INI_TIEMPO
+0408    759955         287    		MOV SBUF,#055H
+                       288    ES_CTRL:  
+040B    E564           289    MOV A , 100 
+040D    60FC           290     		JZ ES_CTRL
+040F    756400         291    MOV 100 , # 00H 
+0412    6148           292      		JMP LOOP		
+                       293    
+                       294    ;------------------------------INTE
+                       295    INTE:  
+0414    C0E0           296    PUSH ACC
+0416    C0D0           297    PUSH PSW
+0418    E8             298    MOV A,R0
+0419    C0E0           299    PUSH ACC
+                       300       
+041B    E55F           301    MOV A , 95 
+041D    7006           302    		JNZ SIGUE_INTE  ;SI LETYNEDO SIGUE EN 00  
+041F    20973C         303    			JB CARD_DATA,FIN_INTE    ;SI ES UN CERO NEGADO SALE TODAVIA NO ENTRO NINGUN 1
+0422    755FFF         304    MOV 95 , # 0FFH 
+                       305    
+                       306    SIGUE_INTE:  
+                       307    
+0425    855EE0         308    MOV ACC , 94 
+0428    A297           309    	MOV C,CARD_DATA
+042A    B3             310    	CPL C
+042B    13             311    	RRC A
+042C    85E05E         312    MOV 94 , ACC 
+042F    8560E0         313    MOV ACC , 96 
+0432    6404           314    	XRL A,#04H ;XRL A,#07H AHORA COMPARO CON 4 ES DECIR QUE ENTRARON 5 BYTES
+0434    6005           315    	JZ BUFFER_FULL
+0436    0560           316    INC 96 
+                       317    ;	   MOV PAQUETE_FULL,#00H 
+0438    02045E         318    	   JMP FIN_F2
+                       319    BUFFER_FULL:  
+043B    855EE0         320    MOV ACC , 94 
+043E    13             321          RRC A
+043F    13             322          RRC A
+0440    13             323          RRC A
+0441    541F           324          ANL A,#01FH
+0443    85E05E         325    MOV 94 , ACC 
+                       326    ;      MOV PAQUETE_FULL,#0FFH
+0446    756000         327    MOV 96 , # 00H 
+                       328         
+                       329    FIN_F1:  	
+                       330    ;		MOV A,PAQUETE_FULL
+                       331    ;		JZ SIGUE_F2
+0449    A868           332    MOV R0 , 104 
+044B    A65E           333    MOV @ R0 , 94 
+044D    08             334       	   INC R0
+044E    0562           335    INC 98 
+0450    8868           336    MOV 104 , R0 
+                       337    ;   	   MOV BYTE_ACTUAL,#00H
+                       338       	   ;CLR C
+                       339      	      ;JMP FIN_F2  ;SALE PARA GUARDAR DATO EN RAM
+0452    E562           340    MOV A , 98 
+0454    6431           341      	      XRL A,#031H     ;TAMA;O MAXIMO DE BUFFER EN MEM
+0456    6003           342      	      JZ ERROR_INT0
+0458    02045E         343      	         JMP FIN_F2
+                       344    ERROR_INT0:  
+045B    120555         345    		CALL INI_VAR_READ ;INICIALIZA LAS VARIBLES DE LECTURA
+                       346    SIGUE_F2:  	
+                       347    
+                       348    		
+                       349    FIN_F2:  
+                       350          	
+                       351    FIN_INTE:  
+                       352    
+045E    D0E0           353    POP ACC
+0460    A8E0           354    MOV R0,ACC
+0462    D0D0           355    POP PSW
+0464    D0E0           356    POP ACC
+0466    32             357    RETI
+                       358    
+                       359    
+                       360    ;------------------------------INTE1
+                       361    INTE1:  
+0467    C0E0           362    PUSH ACC
+0469    C0D0           363    PUSH PSW
+                       364    
+                       365    
+                       366    
+                       367    
+                       368    
+                       369    FIN_INTE1:  
+046B    D0D0           370    POP PSW
+046D    D0E0           371    POP ACC
+046F    32             372    RETI
+                       373    
+                       374    ;---------------------------SERIE
+                       375    SERIE:  
+0470    C0E0           376    PUSH ACC
+0472    C0D0           377    PUSH PSW
+0474    89E0           378    MOV ACC,R1
+0476    C0E0           379    PUSH ACC
+                       380    
+0478    209806         381    	JB RI,RXON
+047B    209929         382    	JB TI,TXON
+047E    0204AC         383    	JMP FIN_SERIE
+                       384    RXON:  	
+0481    E540           385    MOV A , 64 
+0483    702A           386      JNZ FIN_SERIE1
+                       387    
+0485    D28C           388      SETB TR0  ;ACTIVO TIEMPO PARA INTERBYTE
+                       389    
+0487    8550E0         390    MOV ACC , 80 
+048A    2544           391    ADD A , 68 
+048C    A9E0           392      MOV R1,ACC
+                       393      
+048E    8599E0         394      MOV ACC,SBUF  
+                       395    ;  MOV ORDEN,A    ;ESPERA RECIBIR 103 DEL CONTROLLER 
+                       396    ;  MOV FLAG_ORDEN,#0FFH
+                       397    
+0491    A7E0           398       MOV @R1,ACC
+                       399     
+0493    0544           400    INC 68 
+                       401    
+0495    1543           402    DEC 67 
+                       403    	
+0497    7545FF         404    MOV 69 , # 0FFH 
+                       405    
+049A    758A01         406    	MOV TL0,#01H	
+049D    758C00         407    	MOV TH0,#00H	
+04A0    D28C           408    	SETB TR0   ;ARRANCO EL TIMER 0 PARA EMPEZAR CON TIEMPO INTERBYTE
+                       409    
+04A2    C298           410    	CLR RI	   
+04A4    0204AC         411    	JMP FIN_SERIE
+                       412    TXON:  
+04A7    7564FF         413    MOV 100 , # 0FFH 
+04AA    C299           414    	CLR TI
+                       415    FIN_SERIE:  
+04AC    0204B1         416      JMP FIN_FIN
+                       417      
+                       418    FIN_SERIE1:  
+04AF    C298           419    CLR RI
+                       420    
+                       421    FIN_FIN:  
+04B1    D0E0           422    POP ACC
+04B3    A9E0           423    MOV R1,ACC
+04B5    D0D0           424    POP PSW
+04B7    D0E0           425    POP ACC
+04B9    32             426    RETI
+                       427           
+                       428    ;-------------------------TIMER0/CONTADOR
+                       429    TIMER0:  
+04BA    C0E0           430    PUSH ACC
+04BC    C0D0           431    PUSH PSW
+                       432    
+04BE    E545           433    MOV A , 69 
+04C0    601A           434    	JZ NO_INTERBYTE
+04C2    E546           435    MOV A , 70 
+04C4    14             436    			DEC A
+04C5    F546           437    MOV 70 , A 
+04C7    7013           438    			JNZ FIN_TIBL
+04C9    E547           439    MOV A , 71 
+04CB    14             440    					DEC A
+04CC    F547           441    MOV 71 , A 
+04CE    7009           442    					JNZ FIN_TIBH
+04D0    7541FF         443    MOV 65 , # 0FFH 
+04D3    754500         444    MOV 69 , # 00H 
+04D6    0204DC         445    				      JMP NO_INTERBYTE
+                       446    FIN_TIBH:  
+04D9    854846         447    MOV 70 , 72 
+                       448    FIN_TIBL:  
+                       449    		 
+                       450    
+                       451    NO_INTERBYTE:  	
+                       452    
+04DC    E54F           453    MOV A , 79 
+04DE    601A           454       JZ NO_T_EXPIRE
+04E0    E54A           455    MOV A , 74 
+04E2    14             456           DEC A
+04E3    F54A           457    MOV 74 , A 
+04E5    7013           458           JNZ FIN_TETL
+04E7    E54B           459    MOV A , 75 
+04E9    14             460           		DEC A
+04EA    F54B           461    MOV 75 , A 
+04EC    7009           462           		JNZ FIN_TETH
+04EE    7542FF         463    MOV 66 , # 0FFH 
+04F1    754F00         464    MOV 79 , # 00H 
+04F4    0204FA         465           		   JMP NO_T_EXPIRE
+                       466    
+                       467    FIN_TETH:  
+04F7    854C4A         468    MOV 74 , 76 
+                       469    FIN_TETL:  
+                       470    
+                       471       
+                       472    NO_T_EXPIRE:  
+                       473    
+04FA    D0D0           474    POP PSW
+04FC    D0E0           475    POP ACC
+04FE    32             476    RETI
+                       477    
+                       478    ;CONTADOR:
+                       479    ;PUSH ACC
+                       480    ;PUSH PSW
+                       481    ;
+                       482    ;
+                       483    ;
+                       484    ;POP PSW
+                       485    ;POP ACC
+                       486    ;RETI
+                       487    
+                       488    
+                       489    ;-------------------FUNCION 1
+                       490    ;GUARDA LOS BITS DE DATOS EN EL ACUMULADOR HASTA COMPLETARLO
+                       491    ;LAS ENTRADAS SON > CARRY 
+                       492    ;LAS SALIDAS SON> PAQUETE_FULL (00H:INCOMPLETO, 0FFH:LLENO) , BYTE_ACTUAL
+                       493    ;          
+                       494    ;FUNCION1:
+                       495    ;PUSH ACC
+                       496    ;PUSH PSW
+                       497    ;
+                       498    ;	
+                       499    ;	MOV ACC,BYTE_ACTUAL
+                       500    ;	RRC A
+                       501    ;	MOV BYTE_ACTUAL,ACC
+                       502    ;	MOV ACC,ITERA
+                       503    ;	XRL A,#04H ;XRL A,#07H AHORA COMPARO CON 4 ES DECIR QUE ENTRARON 5 BYTES
+                       504    ;	JZ BUFFER_FULL
+                       505    ;	   INC ITERA
+                       506    ;	   MOV PAQUETE_FULL,#00H 
+                       507    ;	   JMP FIN_F1
+                       508    ;BUFFER_FULL:
+                       509    ;		MOV ACC,BYTE_ACTUAL
+                       510    ;      RRC A
+                       511    ;      RRC A
+                       512    ;      RRC A
+                       513    ;      ANL A,#01FH
+                       514    ;		MOV BYTE_ACTUAL,ACC       
+                       515    ;      MOV PAQUETE_FULL,#0FFH
+                       516    ;      MOV ITERA,#00H
+                       517    ;     
+                       518    ;FIN_F1:	
+                       519    ;POP PSW
+                       520    ;POP ACC
+                       521    ;RET
+                       522    
+                       523    ;-------------------FUNCION 2
+                       524    ;VERIFICA SI PAQUETE_FULL ESTA LLENO , SI ES ASI LLAMA A GUARDARLO A RAM
+                       525    ;SALE CON LARGO_DAT CON LA CANTIDAD DE REGISTROS INSERTADOS EN RAM 
+                       526    ;SINO LLAMA A FUNCION 1          
+                       527    ;FUNCION2:
+                       528    ;PUSH ACC
+                       529    ;PUSH PSW
+                       530    ;
+                       531    ;;		MOV C,CARD_DATA
+                       532    ;;		CPL C
+                       533    ;		CALL FUNCION1
+                       534    ;		MOV A,PAQUETE_FULL
+                       535    ;		JZ SIGUE_F2
+                       536    ;	      MOV @R0,BYTE_ACTUAL	;CALL GUARDA_RAM APARTIR DE STARTSENTINEL      	
+                       537    ;   	   INC R0
+                       538    ;   	   INC LARGO_DATA
+                       539    ;   	   MOV BYTE_ACTUAL,#00H
+                       540    ;   	   CLR C
+                       541    ;  	     JMP FIN_F2  ;SALE PARA GUARDAR DATO EN RAM
+                       542    ;SIGUE_F2:	
+                       543    ;
+                       544    ;		
+                       545    ;      	
+                       546    ;FIN_F2:
+                       547    ;POP PSW
+                       548    ;POP ACC
+                       549    ;RET
+                       550    ;-------------------LRC
+                       551    ;SALIDA EN EL REGISTRO 2 DEL LRC
+                       552    ;ANALIZA LA CADENA QUE SE ENCUENTRA EN START_SEN DE LA RAM
+                       553    
+                       554    LRC:  
+04FF    C0E0           555    PUSH ACC
+0501    C0D0           556    PUSH PSW
+0503    E8             557    MOV A,R0
+0504    C0E0           558    PUSH ACC
+0506    EA             559    MOV A,R2
+0507    C0E0           560    PUSH ACC
+                       561    
+                       562    
+0509    7A00           563    MOV R2,#00H
+050B    7880           564    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 564 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+                       565    
+                       566    LOOP1:  
+                       567    
+050D    E6             568    	MOV A,@R0
+050E    540F           569    	ANL A,#0FH
+0510    CA             570    	XCH A,R2
+0511    6A             571    	XRL A,R2
+0512    CA             572    	XCH A,R2
+0513    08             573    	INC R0
+0514    B40FF6         574    	CJNE A,#0FH,LOOP1	
+0517    8A65           575    MOV 101 , R2 
+                       576    
+0519    D0E0           577    POP ACC
+051B    AAE0           578    MOV R2,ACC
+051D    D0E0           579    POP ACC
+051F    A8E0           580    MOV R0,ACC
+0521    D0D0           581    POP PSW                                                                                                                                                       
+0523    D0E0           582    POP ACC
+0525    22             583    RET
+                       584    ;=================ENVIAR
+                       585    ;FUNCION QUE ENVIA LOS LOS VALORES DE LA TARJETA
+                       586    ;ENTRADAS: CANTIDAD DE BYTES A ENVIAR EN LARGO_DATA,
+                       587    ;SI ESTA HAB LA TRANSMISION CON HAB_RX=00H Y INICIO DE 
+                       588    ;CADENA A ENVIAR EN R0
+                       589    
+                       590    ENVIAR:  
+0526    C0E0           591    PUSH ACC
+0528    C0D0           592    PUSH PSW
+052A    E8             593    MOV A,R0
+052B    C0E0           594    PUSH ACC
+                       595     
+                       596    
+052D    7540FF         597    MOV 64 , # 0FFH 
+0530    7880           598    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 598 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+                       599    ;MOV R2,LARGO_DATA
+                       600    ;MOV LARGO_DATA,#010H
+0532    75620F         601    MOV 98 , # 0FH 
+                       602    
+                       603    LAZO_TX:  
+0535    E6             604    MOV A,@R0
+0536    F599           605    MOV SBUF,A
+0538    08             606    INC R0
+                       607    
+                       608    ESPERA:  
+0539    E564           609    MOV A , 100 
+053B    60FC           610    	JZ ESPERA
+                       611    
+053D    756400         612    MOV 100 , # 00H 
+0540    1205FD         613    CALL RETARDO_05MS
+0543    1205FD         614    CALL RETARDO_05MS 
+                       615    
+                       616    
+                       617    
+0546    D562EC         618    DJNZ 98 , LAZO_TX 
+                       619    
+                       620    ;MOV R0,#LRC1
+                       621    ;MOV SBUF,@R0
+                       622    ;CALL RETARDO_05MS
+                       623    ;CALL RETARDO_05MS 
+                       624    ;MOV SBUF,VALORLRC 
+                       625    ;
+0549    754000         626    MOV 64 , # 00H 
+                       627    
+054C    D0E0           628    POP ACC
+054E    A8E0           629    MOV R0,ACC
+0550    D0D0           630    POP PSW
+0552    D0E0           631    POP ACC
+0554    22             632    RET
+                       633    
+                       634    INI_VAR_READ:  
+0555    C0E0           635    PUSH ACC
+0557    C0D0           636    PUSH PSW
+                       637    
+0559    756880         638    MOV 104 , # START_SEN 
+
+*** WARNING #53 IN LINE 638 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+055C    7880           639    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 639 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+055E    756000         640    MOV 96 , # 00H 
+0561    755F00         641    MOV 95 , # 00H 
+0564    756200         642    MOV 98 , # 00H 
+0567    756100         643    MOV 97 , # 00H 
+056A    755E00         644    MOV 94 , # 00H 
+                       645    
+056D    C289           646    CLR IE0 ;BORRO EL FLAG DE INT0
+056F    E554           647    MOV A , 84 
+0571    7002           648    JNZ NO_LEA_CARD
+0573    D2A8           649    	SETB IE.0; HABILLITO LA LECTURA DE TARJETA
+                       650    NO_LEA_CARD:  
+                       651     
+0575    D0D0           652    POP PSW
+0577    D0E0           653    POP ACC
+0579    22             654    RET
+                       655    
+                       656    VERIFICAR_CADENA:  
+057A    C0E0           657    PUSH ACC
+057C    C0D0           658    PUSH PSW
+057E    E8             659    MOV A,R0
+057F    C0E0           660    PUSH ACC
+                       661    
+0581    7880           662           MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 662 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0583    E6             663           MOV A,@R0
+0584    B40B0C         664           CJNE A,#0BH,ERROROINV
+0587    788E           665              MOV R0,#END_SEN
+
+*** WARNING #53 IN LINE 665 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0589    E6             666              MOV A,@R0
+058A    B41F06         667              CJNE A,#01FH,ERROROINV
+058D    75630A         668    MOV 99 , # 0AH 
+0590    0205E4         669                JMP ERROR
+                       670    ERROROINV:  
+0593    788F           671    		MOV R0,#LRC1
+
+*** WARNING #53 IN LINE 671 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0595    E6             672    		MOV A,@R0
+0596    B40D03         673    		CJNE A,#0DH,PRUEBA1
+0599    0205B7         674    		   JMP TIPO2
+                       675    PRUEBA1:  
+059C    B41A03         676    					CJNE A,#01AH,PRUEBA2
+059F    0205B1         677    					 JMP TIPO1
+                       678    PRUEBA2:  					 
+05A2    B40603         679    						CJNE A,#06H,PRUEBA3
+05A5    0205BD         680    							JMP TIPO3
+                       681    							
+05A8    B40303         682    PRUEBA3:  						CJNE A,#03H,PRUEBA4						
+05AB    0205C3         683    		                       JMP TIPO4
+                       684    PRUEBA4:  
+05AE    0205C9         685    										JMP TIPO5
+                       686    												
+                       687    TIPO1:  		
+05B1    1206F6         688    CALL F_PERMUTAR
+05B4    0205D8         689    JMP TIPO11
+                       690    
+                       691    TIPO2:  		
+05B7    1206F6         692    CALL F_PERMUTAR
+05BA    0205D5         693    JMP TIPO22
+                       694    
+                       695    TIPO3:  
+05BD    1206F6         696    CALL F_PERMUTAR
+05C0    0205D2         697    JMP TIPO33
+                       698    
+                       699    TIPO4:  
+05C3    1206F6         700    CALL F_PERMUTAR
+05C6    0205CF         701    JMP TIPO44
+                       702    
+                       703    TIPO5:  
+05C9    1206F6         704    CALL F_PERMUTAR
+05CC    12072A         705    CALL ROTAR_CADENA		
+                       706    TIPO44:  
+05CF    12072A         707    CALL ROTAR_CADENA
+                       708    TIPO33:  
+05D2    12072A         709    CALL ROTAR_CADENA
+                       710    TIPO22:  
+05D5    12072A         711    CALL ROTAR_CADENA		
+                       712    TIPO11:  
+05D8    120770         713    CALL GIRAR_CADENA
+05DB    1207A7         714    CALL ACOMODAR_CADENA
+05DE    75630B         715    MOV 99 , # 0BH 
+05E1    0205E4         716    JMP ERROR
+                       717    
+                       718    ;     	JMP ERROR
+                       719    ERROR:  
+                       720    
+05E4    91FF           721        CALL LRC
+05E6    788F           722        MOV R0,#LRC1
+
+*** WARNING #53 IN LINE 722 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+05E8    E6             723        MOV A,@R0
+05E9    540F           724        ANL A,#0FH
+05EB    F6             725        MOV @R0,A
+05EC    E565           726    MOV A , 101 
+05EE    66             727        XRL A,@R0
+05EF    6003           728        JZ FIN_VERI
+                       729    ERROR_CAD:  
+05F1    75630C         730    MOV 99 , # 0CH 
+                       731    
+                       732    FIN_VERI:  
+05F4    D0E0           733    POP ACC
+05F6    A8E0           734    MOV R0,ACC
+05F8    D0D0           735    POP PSW
+05FA    D0E0           736    POP ACC
+05FC    22             737    RET
+                       738    
+                       739    RETARDO_05MS:  
+05FD    C0E0           740    PUSH ACC
+05FF    C0D0           741    PUSH PSW
+0601    C0E0           742    	PUSH ACC
+0603    89E0           743    	MOV ACC,R1
+0605    C0E0           744    	PUSH ACC
+0607    8AE0           745    	MOV ACC,R2
+0609    C0E0           746    	PUSH ACC
+060B    8BE0           747    	MOV ACC,R3
+060D    C0E0           748    	PUSH ACC
+                       749    
+060F    7909           750    	MOV R1,#09H      
+                       751    RUT_RET_C:  	
+0611    7A02           752    		MOV R2,#02H ;02
+                       753    RUT_RET1_C:  	
+0613    7B10           754    		MOV R3,#010H ;20
+                       755    RUT_RET2_C:  
+0615    DBFE           756    			DJNZ R3,RUT_RET2_C
+0617    DAFA           757    		DJNZ R2,RUT_RET1_C	
+0619    D9F6           758    	DJNZ R1,RUT_RET_C	
+                       759    
+061B    D0E0           760    	POP ACC
+061D    ABE0           761    	MOV R3,ACC
+061F    D0E0           762    	POP ACC
+0621    AAE0           763    	MOV R2,ACC
+0623    D0E0           764    	POP ACC
+0625    A9E0           765    	MOV R1,ACC
+0627    D0E0           766    	POP ACC
+0629    D0D0           767    POP PSW
+062B    D0E0           768    POP ACC	
+062D    22             769    RET
+                       770    
+                       771    RETARDO_025MS:  
+062E    C0E0           772    PUSH ACC
+0630    C0D0           773    PUSH PSW
+0632    C0E0           774    	PUSH ACC
+0634    89E0           775    	MOV ACC,R1
+0636    C0E0           776    	PUSH ACC
+0638    8AE0           777    	MOV ACC,R2
+063A    C0E0           778    	PUSH ACC
+063C    8BE0           779    	MOV ACC,R3
+063E    C0E0           780    	PUSH ACC
+                       781    
+0640    7909           782    	MOV R1,#09H      
+                       783    RUT_RET_C1:  	
+0642    7A02           784    		MOV R2,#02H ;02
+                       785    RUT_RET1_C1:  	
+0644    7B08           786    		MOV R3,#08H ;20
+                       787    RUT_RET2_C1:  
+0646    DBFE           788    			DJNZ R3,RUT_RET2_C1
+0648    DAFA           789    		DJNZ R2,RUT_RET1_C1	
+064A    D9F6           790    	DJNZ R1,RUT_RET_C1	
+                       791    
+064C    D0E0           792    	POP ACC
+064E    ABE0           793    	MOV R3,ACC
+0650    D0E0           794    	POP ACC
+0652    AAE0           795    	MOV R2,ACC
+0654    D0E0           796    	POP ACC
+0656    A9E0           797    	MOV R1,ACC
+0658    D0E0           798    	POP ACC
+065A    D0D0           799    POP PSW
+065C    D0E0           800    POP ACC	
+065E    22             801    RET
+                       802    
+                       803    HAB_TTL:  
+065F    C289           804    CLR IE0
+0661    D2A8           805    SETB IE.0
+0663    755400         806    MOV 84 , # 00H 
+0666    22             807    RET
+                       808    
+                       809    DES_TTL:  
+0667    C2A8           810    CLR IE.0
+0669    7554FF         811    MOV 84 , # 0FFH 
+066C    22             812    RET
+                       813    
+                       814    
+                       815    INI_TIEMPO:  
+066D    C0E0           816    PUSH ACC
+066F    C0D0           817    PUSH PSW
+                       818    
+0671    754E10         819    MOV 78 , # 010H 
+                       820    
+0674    754802         821    MOV 72 , # 02H 
+0677    754901         822    MOV 73 , # 01H 
+                       823    
+067A    754C78         824    MOV 76 , # 078H 
+067D    754D1E         825    MOV 77 , # 01EH 
+                       826    
+0680    754F00         827    MOV 79 , # 00H 
+0683    754200         828    MOV 66 , # 00H 
+                       829    
+                       830    
+                       831    ;MOV CUENTA_BYTE,VALOR_CUENTA_BYTE
+0686    754400         832    MOV 68 , # 00H 
+                       833    ;MOV T_BYTE,#0FFH
+0689    754100         834    MOV 65 , # 00H 
+                       835    
+068C    754500         836    MOV 69 , # 00H 
+068F    854846         837    MOV 70 , 72 
+0692    854947         838    MOV 71 , 73 
+                       839    
+                       840    
+0695    754FFF         841    MOV 79 , # 0FFH 
+0698    854C4A         842    MOV 74 , 76 
+069B    854D4B         843    MOV 75 , 77 
+                       844    
+069E    854E43         845    MOV 67 , 78 
+                       846    
+                       847    ;MOV INICIO,#BRG
+06A1    7550C0         848    MOV 80 , # SERIAL 
+
+*** WARNING #53 IN LINE 848 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+06A4    754000         849    MOV 64 , # 00H 
+                       850     
+06A7    D0D0           851    POP PSW
+06A9    D0E0           852    POP ACC
+06AB    22             853    RET
+                       854    
+                       855    
+                       856    INI_MEM:  
+06AC    C0E0           857    PUSH ACC
+06AE    C0D0           858    PUSH PSW
+06B0    E8             859    MOV A,R0
+06B1    C0E0           860    PUSH ACC
+06B3    EA             861    MOV A,R2
+06B4    C0E0           862    PUSH ACC
+                       863    
+06B6    7A00           864    MOV R2,#00H
+06B8    7880           865    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 865 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+                       866    
+                       867    LOOP_MEM:  
+                       868    
+06BA    7600           869    	MOV @R0,#00H
+06BC    08             870    	INC R0
+06BD    0A             871    	INC R2
+06BE    EA             872    	MOV A,R2
+06BF    B432F8         873    	CJNE A,#032H,LOOP_MEM	
+                       874    
+06C2    D0E0           875    POP ACC
+06C4    AAE0           876    MOV R2,ACC
+06C6    D0E0           877    POP ACC
+06C8    A8E0           878    MOV R0,ACC
+06CA    D0D0           879    POP PSW                                                                                                                                                       
+06CC    D0E0           880    POP ACC
+06CE    22             881    RET
+                       882    
+                       883    SUMA30:  
+06CF    C0E0           884    PUSH ACC
+06D1    C0D0           885    PUSH PSW
+06D3    E8             886    MOV A,R0
+06D4    C0E0           887    PUSH ACC
+06D6    EA             888    MOV A,R2
+06D7    C0E0           889    PUSH ACC
+                       890    
+                       891    
+06D9    7A00           892    MOV R2,#00H
+06DB    7880           893    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 893 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+                       894    ;MOV R0,DESPLAZAMIENTO
+                       895    
+                       896    LOOP_SUMA:  
+                       897    
+06DD    E6             898    	MOV A,@R0
+06DE    540F           899    	ANL A,#00FH
+06E0    2430           900    	ADD A,#030H
+06E2    F6             901    	MOV @R0,A
+06E3    08             902    	INC R0
+06E4    0A             903    	INC R2
+06E5    EA             904    	MOV A,R2
+06E6    B40FF4         905    	CJNE A,#0FH,LOOP_SUMA	
+                       906    
+06E9    D0E0           907    POP ACC
+06EB    AAE0           908    MOV R2,ACC
+06ED    D0E0           909    POP ACC
+06EF    A8E0           910    MOV R0,ACC
+06F1    D0D0           911    POP PSW
+06F3    D0E0           912    POP ACC
+06F5    22             913    RET
+                       914    ;==========BUSCAR CADENA --------------
+                       915    ;BUSCA LA CADENA ;=0BH CUANDO LA ENCUENTRA DEVUELVE
+                       916    ;DESPLAZAMIENTO CON EL VALOR QUE CORRESPONDE AL PRINCIPIO
+                       917    
+                       918    ;BUSCAR_CADENA:
+                       919    ;PUSH ACC
+                       920    ;PUSH PSW
+                       921    
+                       922    ;       MOV R0,#START_SEN
+                       923    ;       MOV DESPLAZAMIENTO,#00H
+                       924     
+                       925    ; SIGUE_BUSCANDO:
+                       926    ;       MOV A,@R0
+                       927    ;       XRL A,#0BH
+                       928    ;       JZ IGUAL
+                       929    ;       	INC R0
+                       930    ;       	MOV A,R0
+                       931    ;       	SUBB A,#START_SEN
+                       932    ;       	MOV DESPLAZAMIENTO,A
+                       933           	
+                       934    ;       	MOV A,LARGO_DATA
+                       935    ;       	XRL A,DESPLAZAMIENTO
+                       936    ;       	JZ NO_IGUAL
+                       937    ;       	JMP SIGUE_BUSCANDO
+                       938    
+                       939    ;NO_IGUAL:
+                       940    	
+                       941    	
+                       942    ;IGUAL:       
+                       943    
+                       944     
+                       945     
+                       946     
+                       947    ;POP PSW
+                       948    ;POP ACC
+                       949    ;RET
+                       950    
+                       951    ;===================FUNCION PERMUTAR================
+                       952    ;PERMUTA LOS BITS DE LA CEDENA LEIDA Y LOS GUARDA EN LA CADENA2
+                       953    ;
+                       954    F_PERMUTAR:  
+06F6    C0E0           955    PUSH ACC
+06F8    C0D0           956    PUSH PSW
+06FA    E8             957    MOV A,R0
+06FB    C0E0           958    PUSH ACC
+                       959    
+06FD    7880           960    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 960 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+06FF    756900         961    MOV 105 , # 00H 
+                       962    
+                       963    SIGUE_PERMUTAR:  
+                       964    
+0702    E6             965    MOV A,@R0
+                       966    
+0703    A2E4           967    MOV C,ACC.4
+0705    92F4           968    MOV B.4,C
+0707    A2E0           969    MOV C,ACC.0
+0709    92F3           970    MOV B.3,C
+070B    A2E1           971    MOV C,ACC.1
+070D    92F2           972    MOV B.2,C
+070F    A2E2           973    MOV C,ACC.2
+0711    92F1           974    MOV B.1,C
+0713    A2E3           975    MOV C,ACC.3
+0715    92F0           976    MOV B.0,C
+                       977    
+0717    E5F0           978    MOV A,B
+                       979    
+0719    F6             980    MOV @R0,A
+071A    08             981    INC R0
+071B    0569           982    INC 105 
+071D    E569           983    MOV A , 105 
+071F    B410E0         984    CJNE A,#010H,SIGUE_PERMUTAR	
+                       985    
+                       986    
+                       987    
+0722    D0E0           988    POP ACC
+0724    F8             989    MOV R0,A
+0725    D0D0           990    POP PSW
+0727    D0E0           991    POP ACC
+0729    22             992    RET
+                       993    
+                       994    
+                       995    ROTAR_CADENA:  
+072A    C0E0           996    PUSH ACC
+072C    C0D0           997    PUSH PSW
+072E    E8             998    MOV A,R0
+072F    C0E0           999    PUSH ACC
+                      1000    
+0731    7880          1001    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 1001 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0733    756A00        1002    MOV 106 , # 00H 
+0736    75F000        1003    MOV B,#00H
+                      1004    
+                      1005    
+                      1006    SIGUE_RC:  
+                      1007    
+0739    E6            1008    MOV A,@R0
+                      1009    
+073A    A2F6          1010    MOV C,B.6         ;CARRY DEL BYTE ANTERIOR
+073C    92E5          1011    MOV  ACC.5,C
+                      1012                    ;BOORO EL REG B
+                      1013                 
+073E    75F000        1014    MOV B,#00H
+                      1015    
+0741    A2E4          1016    MOV C,ACC.4    ;SALVO EL CARRY QUE VA AL PROXIMO
+0743    92E6          1017    MOV ACC.6,C
+                      1018    
+0745    A2E0          1019    MOV C,ACC.0
+0747    92F4          1020    MOV B.4,C
+                      1021    
+0749    A2E3          1022    MOV C,ACC.3
+074B    92F2          1023    MOV B.2,C
+                      1024    
+074D    A2E2          1025    MOV C,ACC.2
+074F    92F1          1026    MOV B.1,C
+                      1027    
+0751    A2E1          1028    MOV C,ACC.1
+0753    92F0          1029    MOV B.0,C
+                      1030    
+0755    A2E5          1031    MOV C,ACC.5      ;PASO EL CARRY QUE VENIA DE ANTES 
+0757    92F3          1032    MOV B.3,C
+                      1033    
+0759    A2E6          1034    MOV C,ACC.6
+                      1035    
+075B    E5F0          1036    MOV A,B
+075D    92F6          1037    MOV B.6,C        ;SALVO EL CARRY PROXIMO
+                      1038    
+075F    F6            1039    MOV @R0,A
+0760    08            1040    INC R0
+0761    056A          1041    INC 106 
+0763    E56A          1042    MOV A , 106 
+0765    B410D1        1043    CJNE A,#010H,SIGUE_RC	
+                      1044    
+                      1045    
+                      1046    
+0768    D0E0          1047    POP ACC
+076A    F8            1048    MOV R0,A
+076B    D0D0          1049    POP PSW
+076D    D0E0          1050    POP ACC
+076F    22            1051    RET
+                      1052    
+                      1053    ;--------------GIRAR CADENA
+                      1054    ;GIRA BYTE ANTES DE TERMINAR LA INVERSION TOTAL DE CADENA
+                      1055    GIRAR_CADENA:  
+0770    C0E0          1056    PUSH ACC
+0772    C0D0          1057    PUSH PSW
+0774    E8            1058    MOV A,R0
+0775    C0E0          1059    PUSH ACC
+                      1060    
+                      1061    
+0777    7880          1062    MOV R0,#START_SEN
+
+*** WARNING #53 IN LINE 1062 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0779    756B00        1063    MOV 107 , # 00H 
+077C    75F000        1064    MOV B,#00H
+                      1065    
+                      1066    SIGUE_GC:  
+                      1067    
+077F    E6            1068    MOV A,@R0
+                      1069    
+0780    A2E4          1070    MOV C,ACC.4
+0782    92F0          1071    MOV B.0,C
+0784    A2E0          1072    MOV C,ACC.0
+0786    92F1          1073    MOV B.1,C
+0788    A2E1          1074    MOV C,ACC.1
+078A    92F2          1075    MOV B.2,C
+078C    A2E2          1076    MOV C,ACC.2
+078E    92F3          1077    MOV B.3,C
+0790    A2E3          1078    MOV C,ACC.3
+0792    92F4          1079    MOV B.4,C
+                      1080    
+0794    E5F0          1081    MOV A,B
+                      1082    
+0796    F6            1083    MOV @R0,A
+0797    08            1084    INC R0
+0798    056B          1085    INC 107 
+079A    E56B          1086    MOV A , 107 
+079C    B410E0        1087    CJNE A,#010H,SIGUE_GC	
+                      1088    
+                      1089    
+079F    D0E0          1090    POP ACC
+07A1    F8            1091    MOV R0,A
+07A2    D0D0          1092    POP PSW
+07A4    D0E0          1093    POP ACC
+07A6    22            1094    RET
+                      1095    
+                      1096    
+                      1097    
+                      1098    ACOMODAR_CADENA:  
+07A7    C0E0          1099    PUSH ACC
+07A9    C0D0          1100    PUSH PSW
+                      1101            
+07AB    788F          1102     		  MOV R0,#LRC1
+
+*** WARNING #53 IN LINE 1102 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+07AD    7990          1103     		  MOV R1,#START_SEN2
+
+*** WARNING #53 IN LINE 1103 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+07AF    756700        1104    MOV 103 , # 00H 
+                      1105    
+                      1106    SIGUE_ACOMODA:  
+                      1107          		  
+07B2    E6            1108            MOV A,@R0
+07B3    F7            1109     		  MOV @R1,A
+07B4    18            1110     		  DEC R0
+07B5    09            1111     		  INC R1
+07B6    0567          1112    INC 103 
+07B8    E567          1113    MOV A , 103 
+07BA    B410F5        1114     		  CJNE A,#010H,SIGUE_ACOMODA	
+                      1115    
+07BD    7890          1116     		  MOV R0,#START_SEN2
+
+*** WARNING #53 IN LINE 1116 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+07BF    7980          1117     		  MOV R1,#START_SEN
+
+*** WARNING #53 IN LINE 1117 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+07C1    756700        1118    MOV 103 , # 00H 
+                      1119    
+                      1120    SIGUE_ACOMODA1:  
+                      1121          		  
+07C4    E6            1122            MOV A,@R0
+07C5    F7            1123     		  MOV @R1,A
+07C6    08            1124     		  INC R0
+07C7    09            1125     		  INC R1
+07C8    0567          1126    INC 103 
+07CA    E567          1127    MOV A , 103 
+07CC    B410F5        1128     		  CJNE A,#010H,SIGUE_ACOMODA1	
+                      1129    
+                      1130    
+07CF    D0D0          1131    POP PSW
+07D1    D0E0          1132    POP ACC
+07D3    22            1133    RET
+                      1134    
+                      1135    INI_LED:  
+07D4    C0E0          1136    PUSH ACC
+07D6    C0D0          1137    PUSH PSW
+                      1138     
+07D8    C2A4          1139    CLR LLED
+07DA    D2A2          1140    SETB DATALED  
+                      1141    
+07DC    756C60        1142    MOV 108 , # 060H 
+                      1143    LAZO_INI_LED:  
+07DF    B2A3          1144    CPL CLKLED 
+07E1    B1FD          1145    CALL  RETARDO_05MS
+07E3    D56CF9        1146    DJNZ 108 , LAZO_INI_LED 
+                      1147     
+07E6    D2A4          1148    SETB LLED
+                      1149    
+07E8    D0D0          1150    POP PSW
+07EA    D0E0          1151    POP ACC
+07EC    22            1152    RET
+                      1153    
+                      1154    RGB_LED:  
+07ED    C0E0          1155    PUSH ACC
+07EF    C0D0          1156    PUSH PSW
+                      1157     
+07F1    C2A4          1158    CLR LLED
+07F3    C2A2          1159    CLR DATALED  
+                      1160    
+07F5    756C60        1161    MOV 108 , # 060H 
+                      1162    LAZO_RGB_LED:  
+07F8    B2A3          1163    CPL CLKLED 
+07FA    B1FD          1164    CALL  RETARDO_05MS
+07FC    D56CE0        1165    DJNZ 108 , LAZO_INI_LED 
+                      1166     
+07FF    D2A4          1167    SETB LLED
+                      1168    
+0801    D0D0          1169    POP PSW
+0803    D0E0          1170    POP ACC
+0805    22            1171    RET
+                      1172    
+                      1173    CARGA_BRG_FUEGO:  
+0806    C0E0          1174    PUSH ACC
+0808    C0D0          1175    PUSH PSW
+080A    E8            1176    MOV A,R0
+080B    C0E0          1177    PUSH ACC
+                      1178    
+080D    78B0          1179    MOV R0,#BRG
+
+*** WARNING #53 IN LINE 1179 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+080F    7649          1180    MOV @R0,#049H
+0811    78B1          1181    MOV R0,#BRG+1
+
+*** WARNING #53 IN LINE 1181 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0813    7624          1182    MOV @R0,#24H
+0815    78B2          1183    MOV R0,#BRG+2
+
+*** WARNING #53 IN LINE 1183 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0817    7696          1184    MOV @R0,#096H
+0819    78B3          1185    MOV R0,#BRG+3
+
+*** WARNING #53 IN LINE 1185 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+081B    76DB          1186    MOV @R0,#0DBH
+081D    78B4          1187    MOV R0,#BRG+4
+
+*** WARNING #53 IN LINE 1187 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+081F    766D          1188    MOV @R0,#06DH
+0821    78B5          1189    MOV R0,#BRG+5
+
+*** WARNING #53 IN LINE 1189 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0823    76FA          1190    MOV @R0,#0FAH
+                      1191    
+0825    D0E0          1192    POP ACC
+0827    A8E0          1193    MOV R0,ACC
+0829    D0D0          1194    POP PSW
+082B    D0E0          1195    POP ACC
+082D    22            1196    RET
+                      1197    
+                      1198    CARGA_VERDE_CIAN:  
+082E    C0E0          1199    PUSH ACC
+0830    C0D0          1200    PUSH PSW
+0832    E8            1201    MOV A,R0
+0833    C0E0          1202    PUSH ACC
+                      1203    
+0835    78B0          1204    MOV R0,#BRG
+
+*** WARNING #53 IN LINE 1204 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0837    76A6          1205    MOV @R0,#0A6H
+0839    78B1          1206    MOV R0,#BRG+1
+
+*** WARNING #53 IN LINE 1206 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+083B    769A          1207    MOV @R0,#9AH
+083D    78B2          1208    MOV R0,#BRG+2
+
+*** WARNING #53 IN LINE 1208 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+083F    7669          1209    MOV @R0,#069H
+0841    78B3          1210    MOV R0,#BRG+3
+
+*** WARNING #53 IN LINE 1210 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0843    76A6          1211    MOV @R0,#0A6H
+0845    78B4          1212    MOV R0,#BRG+4
+
+*** WARNING #53 IN LINE 1212 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0847    769A          1213    MOV @R0,#09AH
+0849    78B5          1214    MOV R0,#BRG+5
+
+*** WARNING #53 IN LINE 1214 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+084B    7669          1215    MOV @R0,#069H
+                      1216    
+084D    D0E0          1217    POP ACC
+084F    A8E0          1218    MOV R0,ACC
+0851    D0D0          1219    POP PSW
+0853    D0E0          1220    POP ACC
+0855    22            1221    RET
+                      1222     
+                      1223    
+                      1224    BUFFER_FILL_LED:  
+0856    C0E0          1225    PUSH ACC
+0858    C0D0          1226    PUSH PSW
+085A    E8            1227    MOV A,R0
+085B    C0E0          1228    PUSH ACC
+                      1229    
+085D    C2A4          1230    CLR LLED
+                      1231    
+085F    78B0          1232    MOV R0,#BRG
+
+*** WARNING #53 IN LINE 1232 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+                      1233    
+                      1234    STARTROJO:  
+0861    756D08        1235    MOV 109 , # 08H 
+                      1236    
+                      1237    LAZO_ROJO:  
+0864    E6            1238    MOV A,@R0
+0865    C3            1239    CLR C
+0866    33            1240    RLC A
+0867    F6            1241    MOV @R0,A
+                      1242    
+0868    4005          1243    JC UNO
+086A    D2A2          1244      SETB DATALED
+086C    020871        1245      JMP SIGUE_R
+                      1246    UNO:  
+086F    C2A2          1247    CLR DATALED
+                      1248    SIGUE_R:  
+0871    B2A3          1249    CPL CLKLED 
+0873    12062E        1250    CALL  RETARDO_025MS
+0876    B2A3          1251    CPL CLKLED 
+0878    12062E        1252    CALL  RETARDO_025MS
+                      1253    
+087B    D56DE6        1254    DJNZ 109 , LAZO_ROJO 
+                      1255    
+087E    08            1256    INC R0
+                      1257    
+                      1258    ;CJNE R0,#076H,STARTROJO  ;MIRA SI YA CAMBIO LOS 6 BYTES
+087F    B8B6DF        1259    CJNE R0,#BRG+6,STARTROJO  ;MIRA SI YA CAMBIO LOS 6 BYTES
+
+*** WARNING #53 IN LINE 1259 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+                      1260    
+0882    D2A4          1261    SETB LLED 
+                      1262    
+                      1263    
+0884    D0E0          1264    POP ACC
+0886    F8            1265    MOV R0,A
+0887    D0D0          1266    POP PSW
+0889    D0E0          1267    POP ACC
+088B    22            1268    RET
+                      1269    
+                      1270    
+                      1271    ROTAR_LED:  
+088C    C0E0          1272    PUSH ACC
+088E    C0D0          1273    PUSH PSW
+0890    E8            1274    MOV A,R0
+0891    C0E0          1275    PUSH ACC
+                      1276    
+0893    78B0          1277    MOV R0,#BRG
+
+*** WARNING #53 IN LINE 1277 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0895    756A00        1278    MOV 106 , # 00H 
+0898    75F000        1279    MOV B,#00H
+                      1280    
+089B    C3            1281    CLR C
+                      1282    
+                      1283    SIGUE_RL:  
+                      1284    
+089C    A2F0          1285    MOV C,B.0
+                      1286    
+089E    E6            1287    MOV A,@R0
+089F    13            1288    RRC A
+08A0    F6            1289    MOV @R0,A
+                      1290    
+08A1    92F0          1291    MOV B.0,C
+                      1292    
+08A3    08            1293    INC R0
+                      1294    
+08A4    056A          1295    INC 106 
+08A6    E56A          1296    MOV A , 106 
+08A8    B406F1        1297    CJNE A,#06H,SIGUE_RL	
+                      1298    
+08AB    78B0          1299    MOV R0,#BRG
+
+*** WARNING #53 IN LINE 1299 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+08AD    E6            1300    MOV A,@R0
+08AE    A2F0          1301    MOV C,B.0
+08B0    92E7          1302    MOV ACC.7,C
+08B2    F6            1303    MOV @R0,A
+                      1304    
+08B3    D0E0          1305    POP ACC
+08B5    F8            1306    MOV R0,A
+08B6    D0D0          1307    POP PSW
+08B8    D0E0          1308    POP ACC
+08BA    22            1309    RET
+                      1310    
+                      1311    
+                      1312    GIRAR1:  
+08BB    C0E0          1313    PUSH ACC
+08BD    C0D0          1314    PUSH PSW
+                      1315    
+08BF    755A00        1316    MOV 90 , # 00H 
+08C2    755B10        1317    MOV 91 , # 010H 
+                      1318    
+                      1319    GIRA_INI:  
+                      1320    
+08C5    120908        1321     CALL CP_CAD 
+08C8    E55A          1322    MOV A , 90 
+08CA    600A          1323     JZ FILL
+08CC    A85A          1324    MOV R0 , 90 
+                      1325    ROTA_FILL:   
+08CE    118C          1326      	CALL ROTAR_LED
+08D0    118C          1327      	CALL ROTAR_LED
+08D2    118C          1328      	CALL ROTAR_LED
+08D4    D8F8          1329      	DJNZ R0,ROTA_FILL
+                      1330       
+                      1331    FILL:   
+08D6    1156          1332      CALL BUFFER_FILL_LED
+08D8    055A          1333    INC 90 
+08DA    D55BE8        1334    DJNZ 91 , GIRA_INI 
+                      1335    
+08DD    D0D0          1336    POP PSW
+08DF    D0E0          1337    POP ACC
+08E1    22            1338    RET
+                      1339    
+                      1340    GIRAR:  
+08E2    C0E0          1341    PUSH ACC
+08E4    C0D0          1342    PUSH PSW
+                      1343    
+08E6    755A00        1344    MOV 90 , # 00H 
+08E9    755B10        1345    MOV 91 , # 010H 
+                      1346    
+                      1347    GIRA_INI1:  
+                      1348    
+08EC    1106          1349     CALL CARGA_BRG_FUEGO
+08EE    E55A          1350    MOV A , 90 
+08F0    600A          1351     JZ FILL1
+08F2    A85A          1352    MOV R0 , 90 
+                      1353    ROTA_FILL1:   
+08F4    118C          1354      	CALL ROTAR_LED
+08F6    118C          1355      	CALL ROTAR_LED
+08F8    118C          1356      	CALL ROTAR_LED
+08FA    D8F8          1357      	DJNZ R0,ROTA_FILL1
+                      1358       
+                      1359    FILL1:   
+08FC    1156          1360      CALL BUFFER_FILL_LED
+08FE    055A          1361    INC 90 
+0900    D55BE9        1362    DJNZ 91 , GIRA_INI1 
+                      1363    
+0903    D0D0          1364    POP PSW
+0905    D0E0          1365    POP ACC
+0907    22            1366    RET
+                      1367    
+                      1368    CP_CAD:  
+0908    C0E0          1369    PUSH ACC
+090A    C0D0          1370    PUSH PSW
+090C    E8            1371    MOV A,R0
+090D    C0E0          1372    PUSH ACC
+090F    E9            1373    MOV A,R1
+0910    C0E0          1374    PUSH ACC
+                      1375    
+0912    79C0          1376    MOV R1,#SERIAL
+
+*** WARNING #53 IN LINE 1376 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0914    09            1377    INC R1
+0915    78B0          1378    MOV R0,#BRG
+
+*** WARNING #53 IN LINE 1378 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+                      1379    
+0917    E7            1380    MOV A,@R1
+0918    F6            1381    MOV @R0,A
+0919    09            1382    INC R1
+091A    08            1383    INC R0
+                      1384    
+091B    E7            1385    MOV A,@R1
+091C    F6            1386    MOV @R0,A
+091D    09            1387    INC R1
+091E    08            1388    INC R0
+                      1389    
+091F    E7            1390    MOV A,@R1
+0920    F6            1391    MOV @R0,A
+0921    09            1392    INC R1
+0922    08            1393    INC R0
+                      1394    
+0923    E7            1395    MOV A,@R1
+0924    F6            1396    MOV @R0,A
+0925    09            1397    INC R1
+0926    08            1398    INC R0
+                      1399    
+0927    E7            1400    MOV A,@R1
+0928    F6            1401    MOV @R0,A
+0929    09            1402    INC R1
+092A    08            1403    INC R0
+                      1404    
+092B    E7            1405    MOV A,@R1
+092C    F6            1406    MOV @R0,A
+092D    09            1407    INC R1
+092E    08            1408    INC R0
+                      1409    
+092F    D0E0          1410    POP ACC
+0931    F9            1411    MOV R1,A
+0932    D0E0          1412    POP ACC
+0934    F8            1413    MOV R0,A
+0935    D0D0          1414    POP PSW
+0937    D0E0          1415    POP ACC
+0939    22            1416    RET 
+                      1417    
+                      1418    CHAIN_CHK:  
+093A    C0E0          1419    PUSH ACC
+093C    C0D0          1420    PUSH PSW
+093E    E8            1421    MOV A,R0
+093F    C0E0          1422    PUSH ACC
+                      1423    
+0941    78C0          1424    MOV R0,#SERIAL
+
+*** WARNING #53 IN LINE 1424 OF piport5.asm : VALUE HAS BEEN TRUNCATED TO 8 BITS
+0943    8651          1425    MOV 81 , @ R0 
+                      1426    
+0945    D0E0          1427    POP ACC
+0947    A8E0          1428    MOV R0,ACC
+0949    D0D0          1429    POP PSW
+094B    D0E0          1430    POP ACC
+094D    22            1431    RET
+                      1432    
+                      1433    F_COIN:  
+094E    C0E0          1434    PUSH ACC
+0950    C0D0          1435    PUSH PSW
+                      1436    
+0952    C2A0          1437    CLR COIN
+0954    12095E        1438    CALL  RETARDO_155MS
+0957    D2A0          1439    SETB COIN
+                      1440    
+0959    D0D0          1441    POP PSW
+095B    D0E0          1442    POP ACC
+095D    22            1443    RET
+                      1444    
+                      1445    ;-------------------RETARDO 155MS
+                      1446    RETARDO_155MS:  
+095E    C0E0          1447    PUSH ACC
+0960    C0D0          1448    PUSH PSW
+0962    7552FE        1449    MOV 82 , # 0FEH 
+0965    755370        1450    MOV 83 , # 070H 
+                      1451    
+                      1452    RETA_155:  
+0968    E552          1453    MOV A , 82 
+096A    14            1454    		DEC A
+096B    F552          1455    MOV 82 , A 
+096D    70F9          1456    		JNZ RETA_155
+                      1457    	
+096F    7552FF        1458    MOV 82 , # 0FFH 
+0972    E553          1459    MOV A , 83 
+0974    14            1460    	      DEC A
+0975    F553          1461    MOV 83 , A 
+0977    70EF          1462    	      JNZ RETA_155
+                      1463    	
+0979    D0D0          1464    POP PSW
+097B    D0E0          1465    POP ACC
+097D    22            1466    RET
+                      1467    
+                      1468    PAGO_ACT_LOW:  
+097E    C2A1          1469    CLR PULSO_TKOUT
+0980    22            1470    RET
+                      1471    
+                      1472    PAGO_ACT_HI:  
+0981    D2A1          1473    SETB PULSO_TKOUT
+0983    22            1474    RET
+                      1475    
+                      1476    
+                      1477    
+                      1478    END                                           
+MACRO ASSEMBLER PIPORT5                                     08/31/117 15:23:41 PAGE     2
+
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES             REFERENCES
+
+TIPO22 . . . . . .  C ADDR   05D5H   A                          693 710# 
+ESPERA . . . . . .  C ADDR   0539H   A                          608# 610 
+ES_COIN. . . . . .  C ADDR   03EAH   A                          251 272# 
+SERIAL . . . . . .  C ADDR   00C0H   A                          108# 848 1376 1424 
+                                                                
+VALOR_TIBYTEL. . .  N NUMB   0048h                              75# 447 821 837 
+CONTADOR_G . . . .  N NUMB   005Ah                              64# 1316 1322 1324 
+                                                                1333 1344 1350 1352 
+                                                                1361 
+DESPLAZAMIENTO . .  N NUMB   0066h                              56# 
+SIGUE_ACOMODA1 . .  C ADDR   07C4H   A                          1120# 1128 
+ACOMODAR_CADENA. .  C ADDR   07A7H   A                          714 1098# 
+LAZO_TX. . . . . .  C ADDR   0535H   A                          603# 618 
+LRC. . . . . . . .  C ADDR   04FFH   A                          554# 721 
+INTE1. . . . . . .  C ADDR   0467H   A                          361# 
+LLED . . . . . . .  B ADDR   00A0H.4 A                          25# 1139 1148 1158 
+                                                                1167 1230 1261 
+P1 . . . . . . . .  D ADDR   0090H   A                          18 19 34 35 38 39 
+                                                                40 
+GIRA_INI . . . . .  C ADDR   08C5H   A                          1319# 1334 
+TIPO33 . . . . . .  C ADDR   05D2H   A                          697 708# 
+TIEMPO_INTER_BYTE.  N NUMB   0045h                              72# 404 433 444 836 
+                                                                
+B. . . . . . . . .  D ADDR   00F0H   A                          968 970 972 974 976 
+                                                                978 1003 1010 1014 
+                                                                1020 1023 1026 1029 
+                                                                1032 1036 1037 1064 
+                                                                1071 1073 1075 1077 
+                                                                1079 1081 1279 1285 
+                                                                1291 1301 
+P2 . . . . . . . .  D ADDR   00A0H   A                          25 26 27 32 42 
+ROTAR_CADENA . . .  C ADDR   072AH   A                          705 707 709 711 995# 
+                                                                
+FIN_TIBH . . . . .  C ADDR   04D9H   A                          442 446# 
+INI_VAR_READ . . .  C ADDR   0555H   A                          158 233 239 345 634# 
+                                                                
+T_EXPIRE_TOTAL . .  N NUMB   004Fh                              82# 453 464 827 841 
+                                                                
+CONTADOR_GC. . . .  N NUMB   006Bh                              61# 1063 1085 1086 
+                                                                
+P3 . . . . . . . .  D ADDR   00B0H   A                          20 29 30 36 
+LAZO_RGB_LED . . .  C ADDR   07F8H   A                          1162# 
+TIPO44 . . . . . .  C ADDR   05CFH   A                          701 706# 
+ERROR_INT0 . . . .  C ADDR   045BH   A                          342 344# 
+FIN_SERIE1 . . . .  C ADDR   04AFH   A                          386 418# 
+ES_SALIDA. . . . .  C ADDR   0405H   A                          271 275 278 281 284 
+                                                                285# 
+ENVIAR . . . . . .  C ADDR   0526H   A                          230 590# 
+START_SEN2 . . . .  C ADDR   0090H   A                          98# 1103 1116 
+VALORLRC . . . . .  N NUMB   0065h                              55# 575 726 
+RETA_155 . . . . .  C ADDR   0968H   A                          1452# 1456 1462 
+SIGUE_GC . . . . .  C ADDR   077FH   A                          1066# 1087 
+ERROROINV. . . . .  C ADDR   0593H   A                          664 667 670# 
+GIRAR1 . . . . . .  C ADDR   08BBH   A                          274 277 1312# 
+ES_DES_TTL . . . .  C ADDR   03FFH   A                          263 282# 
+EA . . . . . . . .  B ADDR   00A8H.7 A                          134 
+FILL . . . . . . .  C ADDR   08D6H   A                          1323 1331# 
+RETARDO_025MS. . .  C ADDR   062EH   A                          771# 1250 1252 
+RUT_RET_C. . . . .  C ADDR   0611H   A                          751# 758 
+NO_LEA_CARD. . . .  C ADDR   0575H   A                          648 650# 
+FIN_TIBL . . . . .  C ADDR   04DCH   A                          438 448# 
+RXON . . . . . . .  C ADDR   0481H   A                          381 384# 
+PAQUETE_FULL . . .  N NUMB   0061h                              51# 643 
+ACC. . . . . . . .  D ADDR   00E0H   A                          296 299 308 312 313 
+                                                                320 325 353 354 356 
+                                                                362 371 376 378 379 
+                                                                390 392 394 398 422 
+                                                                423 425 430 475 555 
+                                                                558 560 577 578 579 
+                                                                580 582 591 594 628 
+                                                                629 631 635 653 657 
+                                                                660 733 734 736 740 
+                                                                742 743 744 745 746 
+                                                                747 748 760 761 762 
+                                                                763 764 765 766 768 
+                                                                772 774 775 776 777 
+                                                                778 779 780 792 793 
+                                                                794 795 796 797 798 
+                                                                800 816 852 857 860 
+                                                                862 875 876 877 878 
+                                                                880 884 887 889 907 
+                                                                908 909 910 912 955 
+                                                                958 967 969 971 973 
+                                                                975 988 991 996 999 
+                                                                1011 1016 1017 1019 
+                                                                1022 1025 1028 1031 
+                                                                1034 1047 1050 1056 
+                                                                1059 1070 1072 1074 
+                                                                1076 1078 1090 1093 
+                                                                1099 1132 1136 1151 
+                                                                1155 1170 1174 1177 
+                                                                1192 1193 1195 1199 
+                                                                1202 1217 1218 1220 
+                                                                1225 1228 1264 1267 
+                                                                1272 1275 1302 1305 
+                                                                1308 1313 1337 1341 
+                                                                1365 1369 1372 1374 
+                                                                1410 1412 1415 1419 
+                                                                1422 1427 1428 1430 
+                                                                1434 1442 1447 1465 
+                                                                
+STARTROJO. . . . .  C ADDR   0861H   A                          1234# 1259 
+ES_GIRO. . . . . .  C ADDR   03F3H   A                          255 276# 
+LAZO_INI_LED . . .  C ADDR   07DFH   A                          1143# 1146 1165 
+RUT_RET1_C1. . . .  C ADDR   0644H   A                          785# 789 
+TXON . . . . . . .  C ADDR   04A7H   A                          382 412# 
+CONTADOR_PERMUTAR.  N NUMB   0069h                              59# 961 982 983 
+DIRECCION_ACTUAL .  N NUMB   0068h                              58# 332 336 638 
+PULSO_TKOUT. . . .  B ADDR   00A0H.1 A                          42# 1469 1473 
+COIN . . . . . . .  B ADDR   00A0H.0 A                          32# 1437 1439 
+ET0. . . . . . . .  B ADDR   00A8H.1 A                          133 
+RUT_RET2_C1. . . .  C ADDR   0646H   A                          787# 788 
+ERROR. . . . . . .  C ADDR   05E4H   A                          669 716 719# 
+CONTADOR_RETARDO8H  N NUMB   0053h                              86# 1450 1459 1461 
+                                                                
+RETARDO_155MS. . .  C ADDR   095EH   A                          1438 1446# 
+LOOP1. . . . . . .  C ADDR   050DH   A                          566# 574 
+CTRL_A_IN. . . . .  B ADDR   0090H.2 A                          38# 
+SIGUE_PERMUTAR . .  C ADDR   0702H   A                          963# 984 
+BUFFER_FULL. . . .  C ADDR   043BH   A                          315 319# 
+FIN_INTE . . . . .  C ADDR   045EH   A                          303 351# 
+SIGUE_INTE . . . .  C ADDR   0425H   A                          302 306# 
+ES_CTRL. . . . . .  C ADDR   040BH   A                          288# 290 
+ENVIAR_CAD . . . .  C ADDR   03A2H   A                          225 228# 
+CTRL_B_IN. . . . .  B ADDR   0090H.3 A                          39# 
+CTRL_A_OUT . . . .  B ADDR   0090H.0 A                          34# 
+TH0. . . . . . . .  D ADDR   008CH   A                          132 407 
+ROTA_FILL1 . . . .  C ADDR   08F4H   A                          1353# 1357 
+TIPO1. . . . . . .  C ADDR   05B1H   A                          677 687# 
+CARGA_VERDE_CIAN .  C ADDR   082EH   A                          205 1198# 
+CARGA_BRG_FUEGO. .  C ADDR   0806H   A                          193 1173# 1349 
+INI_TIEMPO . . . .  C ADDR   066DH   A                          159 265 286 815# 
+                                                                
+BYTE_ACTUAL. . . .  N NUMB   005Eh                              48# 308 312 320 325 
+                                                                333 644 
+CTRL_B_OUT . . . .  B ADDR   0090H.1 A                          35# 
+TH1. . . . . . . .  D ADDR   008DH   A                          145 
+PAGO_ACT_HI. . . .  C ADDR   0981H   A                          1472# 
+SIGUE_R. . . . . .  C ADDR   0871H   A                          1245 1248# 
+TIPO2. . . . . . .  C ADDR   05B7H   A                          674 691# 
+F_COIN . . . . . .  C ADDR   094EH   A                          273 1433# 
+END_SEN2 . . . . .  C ADDR   009EH   A                          100# 
+CONTADOR_RETARDO8L  N NUMB   0052h                              85# 1449 1453 1455 
+                                                                1458 
+TIEMPO_ETH . . . .  N NUMB   004Bh                              78# 459 461 843 
+CONTADOR_RC. . . .  N NUMB   006Ah                              60# 1002 1041 1042 
+                                                                1278 1295 1296 
+LARGO_DATA . . . .  N NUMB   0062h                              52# 335 340 601 618 
+                                                                642 
+IE . . . . . . . .  D ADDR   00A8H   A                          124 125 126 143 144 
+                                                                216 649 805 810 
+PAGO_ACT_LOW . . .  C ADDR   097EH   A                          1468# 
+LAZO_ROJO. . . . .  C ADDR   0864H   A                          1237# 1254 
+LOOP_SUMA. . . . .  C ADDR   06DDH   A                          896# 905 
+TIPO3. . . . . . .  C ADDR   05BDH   A                          680 695# 
+DES_TTL. . . . . .  C ADDR   0667H   A                          283 809# 
+RGB_LED. . . . . .  C ADDR   07EDH   A                          167 1154# 
+DATALED. . . . . .  B ADDR   00A0H.2 A                          27# 1140 1159 1244 
+                                                                1247 
+CLKLED . . . . . .  B ADDR   00A0H.3 A                          26# 1144 1163 1249 
+                                                                1251 
+SIGUE_ACOMODA. . .  C ADDR   07B2H   A                          1106# 1114 
+GIRAR_CADENA . . .  C ADDR   0770H   A                          713 1055# 
+TIPO4. . . . . . .  C ADDR   05C3H   A                          683 699# 
+PRUEBA1. . . . . .  C ADDR   059CH   A                          673 675# 
+LARGO_CADENA . . .  N NUMB   0044h                              71# 391 400 832 
+TRANSMISION_OK . .  N NUMB   0064h                              54# 157 195 198 200 
+                                                                207 289 291 413 609 
+                                                                612 
+LEYENDO. . . . . .  N NUMB   005Fh                              49# 180 301 304 641 
+                                                                
+INTE . . . . . . .  C ADDR   0414H   A                          4 295# 
+SM0. . . . . . . .  B ADDR   0098H.7 A                          140 
+SBUF . . . . . . .  D ADDR   0099H   A                          196 208 287 394 605 
+                                                                
+TL0. . . . . . . .  D ADDR   008AH   A                          131 406 
+SIGUE_RC . . . . .  C ADDR   0739H   A                          1006# 1043 
+ERROR_CAD. . . . .  C ADDR   05F1H   A                          729# 
+TIPO5. . . . . . .  C ADDR   05C9H   A                          685 703# 
+PRUEBA2. . . . . .  C ADDR   05A2H   A                          676 678# 
+FIN_TETH . . . . .  C ADDR   04F7H   A                          462 467# 
+CONTADOR_G1. . . .  N NUMB   005Bh                              65# 1317 1334 1345 
+                                                                1362 
+TIMER0 . . . . . .  C ADDR   04BAH   A                          8 429# 
+SM1. . . . . . . .  B ADDR   0098H.6 A                          141 
+TL1. . . . . . . .  D ADDR   008BH   A                          146 
+UNO. . . . . . . .  C ADDR   086FH   A                          1243 1246# 
+FIN_VERI . . . . .  C ADDR   05F4H   A                          728 732# 
+PRUEBA3. . . . . .  C ADDR   05A8H   A                          679 682# 
+NO_INTERBYTE . . .  C ADDR   04DCH   A                          434 445 451# 
+VERIFICA_DIRECTO .  C ADDR   0399H   A                          221 223# 
+LRC1 . . . . . . .  C ADDR   008FH   A                          95# 671 722 1102 
+                                                                
+TIEMPO_ETL . . . .  N NUMB   004Ah                              77# 455 457 468 842 
+                                                                
+TIEMPO_IBYTEH. . .  N NUMB   0047h                              74# 439 441 838 
+GIRA_INI1. . . . .  C ADDR   08ECH   A                          1347# 1362 
+PRUEBA4. . . . . .  C ADDR   05AEH   A                          682 684# 
+FIN_F1 . . . . . .  C ADDR   0449H   A                          329# 
+LRC2 . . . . . . .  C ADDR   009FH   A                          102# 
+START_SEN. . . . .  C ADDR   0080H   A                          91# 564 598 638 639 
+                                                                662 865 893 960 1001 
+                                                                1062 1117 
+FLAG_LECTURA_TARJ~  N NUMB   0054h                              87# 647 806 811 
+CUENTA_BYTE. . . .  N NUMB   0043h                              70# 402 845 
+CONTADOR_ROJO. . .  N NUMB   006Dh                              63# 1235 1254 
+CARD_CLK . . . . .  B ADDR   00B0H.2 A                          20# 
+CARD_DATA. . . . .  B ADDR   0090H.7 A                          18# 303 309 
+SCON . . . . . . .  D ADDR   0098H   A                          142 
+FIN_SERIE. . . . .  C ADDR   04ACH   A                          383 411 415# 
+SIGUE_F2 . . . . .  C ADDR   045EH   A                          346# 
+FIN_F2 . . . . . .  C ADDR   045EH   A                          318 343 349# 
+BUFFER_FILL_LED. .  C ADDR   0856H   A                          194 206 270 1224# 
+                                                                1332 1360 
+CHK_ENTRADA. . . .  C ADDR   03BBH   A                          190 242# 
+SW1_PRES . . . . .  C ADDR   0378H   A                          171 203# 
+INI_LED. . . . . .  C ADDR   07D4H   A                          166 1135# 
+FLAG_INT0. . . . .  B ADDR   0088H.1 A                          22# 
+TMOD . . . . . . .  D ADDR   0089H   A                          130 147 
+TCON . . . . . . .  D ADDR   0088H   A                          22 23 120 123 
+F_PERMUTAR . . . .  C ADDR   06F6H   A                          688 692 696 700 704 
+                                                                954# 
+RETARDO_05MS . . .  C ADDR   05FDH   A                          613 614 739# 1145 
+                                                                1164 
+FIN_TETL . . . . .  C ADDR   04FAH   A                          458 469# 
+ES_HAB_TTL . . . .  C ADDR   03F9H   A                          259 279# 
+SW_TX. . . . . . .  C ADDR   036FH   A                          197# 199 209 
+SW2_PRES . . . . .  C ADDR   0363H   A                          172 192# 
+GIRAR. . . . . . .  C ADDR   08E2H   A                          164 234 1340# 
+ITERA. . . . . . .  N NUMB   0060h                              50# 313 316 327 640 
+                                                                
+IN_INH . . . . . .  B ADDR   0090H.4 A                          40# 
+FLAG_INT1. . . . .  B ADDR   0088H.3 A                          23# 
+ES_COLOR . . . . .  C ADDR   03E1H   A                          247 268# 
+FIN_LOOP . . . . .  C ADDR   03B3H   A                          222 227 237# 
+VERIFICAR_CADENA .  C ADDR   057AH   A                          217 656# 
+VALOR_CUENTA_BYTE.  N NUMB   004Eh                              81# 819 845 
+TIEMPO_IBYTEL. . .  N NUMB   0046h                              73# 435 437 447 837 
+                                                                
+VERI . . . . . . .  N NUMB   0063h                              53# 220 668 715 730 
+                                                                
+OUT_INH. . . . . .  B ADDR   00B0H.7 A                          36# 
+TR0. . . . . . . .  B ADDR   0088H.4 A                          135 189 388 408 
+TR1. . . . . . . .  B ADDR   0088H.6 A                          150 
+FILL1. . . . . . .  C ADDR   08FCH   A                          1351 1359# 
+LOOP_MEM . . . . .  C ADDR   06BAH   A                          867# 873 
+RUT_RET_C1 . . . .  C ADDR   0642H   A                          783# 790 
+RUT_RET1_C . . . .  C ADDR   0613H   A                          753# 757 
+CHAIN_CHK. . . . .  C ADDR   093AH   A                          243 1418# 
+VALOR_TETH . . . .  N NUMB   004Dh                              80# 825 843 
+SERIE. . . . . . .  C ADDR   0470H   A                          12 375# 
+PIPO . . . . . . .  C ADDR   0300H   A                          2 116# 
+ES . . . . . . . .  B ADDR   00A8H.4 A                          149 
+RUT_RET2_C . . . .  C ADDR   0615H   A                          755# 756 
+FIN_FIN. . . . . .  C ADDR   04B1H   A                          416 421# 
+SUMA30 . . . . . .  C ADDR   06CFH   A                          229 883# 
+LAZ2 . . . . . . .  C ADDR   035EH   A                          177 188# 
+SIGUE_RL . . . . .  C ADDR   089CH   A                          1283# 1297 
+CP_CAD . . . . . .  C ADDR   0908H   A                          269 1321 1368# 
+READING. . . . . .  C ADDR   0389H   A                          181 183 212# 214 
+                                                                
+LOOP . . . . . . .  C ADDR   0348H   A                          169# 182 185 201 
+                                                                235 240 266 292 
+TIEMPO_EXPIRE. . .  N NUMB   0041h                              68# 176 443 834 
+CONTADOR_ACOMODAR~  N NUMB   0067h                              57# 1104 1112 1113 
+                                                                1118 1126 1127 
+CARD_PRESENT . . .  B ADDR   0090H.5 A                          19# 182 214 
+PSW. . . . . . . .  D ADDR   00D0H   A                          297 355 363 370 377 
+                                                                424 431 474 556 581 
+                                                                592 630 636 652 658 
+                                                                735 741 767 773 799 
+                                                                817 851 858 879 885 
+                                                                911 956 990 997 1049 
+                                                                1057 1092 1100 1131 
+                                                                1137 1150 1156 1169 
+                                                                1175 1194 1200 1219 
+                                                                1226 1266 1273 1307 
+                                                                1314 1336 1342 1364 
+                                                                1370 1414 1420 1429 
+                                                                1435 1441 1448 1464 
+                                                                
+BRG. . . . . . . .  C ADDR   00B0H   A                          105# 1179 1181 1183 
+                                                                1185 1187 1189 1204 
+                                                                1206 1208 1210 1212 
+                                                                1214 1232 1259 1277 
+                                                                1299 1378 
+VALOR_CHAIN_CHK. .  N NUMB   0051h                              84# 245 249 253 257 
+                                                                261 1425 
+INICIO . . . . . .  N NUMB   0050h                              83# 390 848 
+SW1. . . . . . . .  B ADDR   00B0H.4 A                          29# 171 
+RI . . . . . . . .  B ADDR   0098H.0 A                          381 410 419 
+ROTA_FILL. . . . .  C ADDR   08CEH   A                          1325# 1329 
+ROTAR_LED. . . . .  C ADDR   088CH   A                          1271# 1326 1327 1328 
+                                                                1354 1355 1356 
+NO_T_EXPIRE. . . .  C ADDR   04FAH   A                          454 465 472# 
+VERIFICA_INVERTIDO  C ADDR   039FH   A                          224 226# 
+END_SEN. . . . . .  C ADDR   008EH   A                          93# 665 
+VALOR_TETL . . . .  N NUMB   004Ch                              79# 468 824 842 
+VALOR_TIBYTEH. . .  N NUMB   0049h                              76# 822 838 
+VAR_INI_LED. . . .  N NUMB   006Ch                              62# 1142 1146 1161 
+                                                                1165 
+SW2. . . . . . . .  B ADDR   00B0H.5 A                          30# 172 
+FIN_INTE1. . . . .  C ADDR   046BH   A                          369# 
+TIEMPO_EXPIRE_TOT~  N NUMB   0042h                              69# 463 828 
+TI . . . . . . . .  B ADDR   0098H.1 A                          382 414 
+TIPO11 . . . . . .  C ADDR   05D8H   A                          689 712# 
+HAB_TTL. . . . . .  C ADDR   065FH   A                          204 280 803# 
+INI_MEM. . . . . .  C ADDR   06ACH   A                          165 232 238 856# 
+                                                                
+RECIVE . . . . . .  N NUMB   0040h                              67# 156 385 597 626 
+                                                                849 
+IE0. . . . . . . .  B ADDR   0088H.1 A                          646 804 
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1734    ----
+   XDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+REGISTER BANK(S) USED : 0 
+
+ASSEMBLY COMPLETE.  37 WARNING(S)   0 ERROR(S)
